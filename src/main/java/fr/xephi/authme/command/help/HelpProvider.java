@@ -45,11 +45,13 @@ public class HelpProvider implements SettingsDependent {
     public static final int ALL_OPTIONS = ~HIDE_COMMAND;
 
     private final PermissionsManager permissionsManager;
+    private final HelpMessagesService helpMessagesService;
     private String helpHeader;
 
     @Inject
-    HelpProvider(PermissionsManager permissionsManager, NewSetting settings) {
+    HelpProvider(PermissionsManager permissionsManager, HelpMessagesService helpMessagesService, NewSetting settings) {
         this.permissionsManager = permissionsManager;
+        this.helpMessagesService = helpMessagesService;
         reload(settings);
     }
 
@@ -106,7 +108,7 @@ public class HelpProvider implements SettingsDependent {
         helpHeader = settings.getProperty(PluginSettings.HELP_HEADER);
     }
 
-    private static void printDetailedDescription(CommandDescription command, List<String> lines) {
+    private void printDetailedDescription(CommandDescription command, List<String> lines) {
         lines.add(ChatColor.GOLD + "Short description: " + ChatColor.WHITE + command.getDescription());
         lines.add(ChatColor.GOLD + "Detailed description:");
         lines.add(ChatColor.WHITE + " " + command.getDetailedDescription());
