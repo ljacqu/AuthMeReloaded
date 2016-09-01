@@ -19,7 +19,7 @@ public class ProcessSyncronousPlayerQuit implements SynchronousProcess {
     public void processSyncQuit(Player player) {
         if (limboCache.hasPlayerData(player.getName())) { // it mean player is not authenticated
             limboCache.restoreData(player);
-            limboCache.removeFromCache(player);
+            limboCache.deletePlayerData(player);
         } else {
             // Save player's data, so we could retrieve it later on player next join
             if (!playerDataStorage.hasData(player)) {

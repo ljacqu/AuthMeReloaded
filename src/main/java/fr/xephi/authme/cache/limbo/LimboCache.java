@@ -43,27 +43,31 @@ public class LimboCache {
      */
     public void addPlayerData(Player player) {
         String name = player.getName().toLowerCase();
-        Location location = spawnLoader.getPlayerLocationOrSpawn(player);
-        boolean operator = player.isOp();
-        boolean flyEnabled = player.getAllowFlight();
-        float walkSpeed = player.getWalkSpeed();
-        float flySpeed = player.getFlySpeed();
-        String playerGroup = "";
-        if (permissionsManager.hasGroupSupport()) {
-            playerGroup = permissionsManager.getPrimaryGroup(player);
-        }
+        Location location;
+        boolean operator;
+        boolean flyEnabled;
+        float walkSpeed;
+        float flySpeed;
+        String playerGroup;
 
-        if (playerDataStorage.hasData(player)) {
-            PlayerData cache = playerDataStorage.readData(player);
-            if (cache != null) {
-                location = cache.getLocation();
-                playerGroup = cache.getGroup();
-                operator = cache.isOperator();
-                flyEnabled = cache.isCanFly();
-                walkSpeed = cache.getWalkSpeed();
-                flySpeed = cache.getFlySpeed();
-            }
+        PlayerData data = playerDataStorage.readData(player);
+        if (data != null) {
+            location = data.getLocation();
+            operator = data.isOperator();
+            flyEnabled = data.isCanFly();
+            walkSpeed = data.getWalkSpeed();
+            flySpeed = data.getFlySpeed();
+            playerGroup = data.getGroup();
         } else {
+            location = spawnLoader.getPlayerLocationOrSpawn(player);
+            operator = player.isOp();
+            flyEnabled = player.getAllowFlight();
+            walkSpeed = player.getWalkSpeed();
+            flySpeed = player.getFlySpeed();
+            playerGroup = "";
+            if (permissionsManager.hasGroupSupport()) {
+                playerGroup = permissionsManager.getPrimaryGroup(player);
+            }
             playerDataStorage.saveData(player);
         }
 
@@ -84,10 +88,10 @@ public class LimboCache {
             float walkSpeed = data.getWalkSpeed();
             float flySpeed = data.getFlySpeed();
             // Reset the speed value if it was 0
-            if(walkSpeed == 0f) {
+            if (walkSpeed == 0f) {
                 walkSpeed = 0.2f;
             }
-            if(flySpeed == 0f) {
+            if (flySpeed == 0f) {
                 flySpeed = 0.2f;
             }
             player.setWalkSpeed(walkSpeed);
@@ -151,7 +155,7 @@ public class LimboCache {
      */
     public void updatePlayerData(Player player) {
         checkNotNull(player);
-        removeFromCache(player);
+        deletePlayerData(player);
         addPlayerData(player);
     }
 
