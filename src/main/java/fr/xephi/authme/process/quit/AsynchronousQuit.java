@@ -4,6 +4,7 @@ import fr.xephi.authme.AuthMe;
 import fr.xephi.authme.cache.SessionManager;
 import fr.xephi.authme.cache.auth.PlayerAuth;
 import fr.xephi.authme.cache.auth.PlayerCache;
+import fr.xephi.authme.cache.backup.PlayerDataStorage;
 import fr.xephi.authme.datasource.CacheDataSource;
 import fr.xephi.authme.datasource.DataSource;
 import fr.xephi.authme.process.AsynchronousProcess;
@@ -44,6 +45,9 @@ public class AsynchronousQuit implements AsynchronousProcess {
     @Inject
     private ValidationService validationService;
 
+    @Inject
+    private PlayerDataStorage playerDataStorage;
+
     AsynchronousQuit() {
     }
 
@@ -55,14 +59,6 @@ public class AsynchronousQuit implements AsynchronousProcess {
         final String name = player.getName().toLowerCase();
 
         if (playerCache.isAuthenticated(name)) {
-            if (service.getProperty(RestrictionSettings.SAVE_QUIT_LOCATION)) {
-                Location loc = spawnLoader.getPlayerLocationOrSpawn(player);
-                PlayerAuth auth = PlayerAuth.builder()
-                    .name(name).location(loc)
-                    .realName(player.getName()).build();
-                database.updateQuitLoc(auth);
-            }
-
             final String ip = Utils.getPlayerIp(player);
             PlayerAuth auth = PlayerAuth.builder()
                 .name(name)
@@ -70,6 +66,11 @@ public class AsynchronousQuit implements AsynchronousProcess {
                 .ip(ip)
                 .lastLogin(System.currentTimeMillis())
                 .build();
+            if (service.getProperty(RestrictionSettings.SAVE_QUIT_LOCATION)) {
+                Location loc = spawnLoader.getPlayerLocationOrSpawn(player);
+                auth.setQuitLocation(loc);
+                database.updateQuitLoc(auth);
+            }
             database.updateSession(auth);
 
             sessionManager.addSession(name);

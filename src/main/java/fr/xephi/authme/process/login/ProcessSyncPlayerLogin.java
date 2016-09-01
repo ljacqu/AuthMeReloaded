@@ -84,8 +84,6 @@ public class ProcessSyncPlayerLogin implements SynchronousProcess {
         if (limbo != null) {
             limboCache.restoreData(player);
             limboCache.deletePlayerData(player);
-            // do we really need to use location from database for now?
-            // because LimboCache#restoreData teleport player to last location.
         }
 
         if (RESTORE_COLLISIONS && !service.getProperty(KEEP_COLLISIONS_DISABLED)) {
