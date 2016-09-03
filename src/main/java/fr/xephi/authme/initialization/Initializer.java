@@ -11,12 +11,14 @@ import fr.xephi.authme.datasource.MySQL;
 import fr.xephi.authme.datasource.SQLite;
 import fr.xephi.authme.output.ConsoleFilter;
 import fr.xephi.authme.output.Log4JFilter;
+import fr.xephi.authme.output.LogLevel;
 import fr.xephi.authme.output.MessageKey;
 import fr.xephi.authme.output.Messages;
 import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.SettingsMigrationService;
 import fr.xephi.authme.settings.properties.DatabaseSettings;
 import fr.xephi.authme.settings.properties.EmailSettings;
+import fr.xephi.authme.settings.properties.PluginSettings;
 import fr.xephi.authme.settings.properties.SecuritySettings;
 import fr.xephi.authme.settings.properties.SettingsFieldRetriever;
 import fr.xephi.authme.settings.propertymap.PropertyMap;
@@ -30,7 +32,12 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static fr.xephi.authme.settings.properties.EmailSettings.RECALL_PLAYERS;
@@ -102,7 +109,27 @@ public class Initializer {
         if (DataSourceType.SQLITE.equals(dataSourceType)) {
             checkDataSourceSize(dataSource);
         }
-        return dataSource;
+        return proxyDatasource(dataSource, settings);
+    }
+
+    private DataSource proxyDatasource(final DataSource dataSource, final Settings settings) {
+        if (!LogLevel.DEBUG.includes(settings.getProperty(PluginSettings.LOG_LEVEL))) {
+            return dataSource;
+        }
+        InvocationHandler handler = new InvocationHandler() {
+            @Override
+            public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
+                long start = System.currentTimeMillis();
+                Object result = method.invoke(dataSource, objects);
+                long diff = System.currentTimeMillis() - start;
+                List<Object> args = objects == null ? null : Arrays.asList(objects);
+                ConsoleLogger.debug("Call DataSource#" + method.getName() + " took " + diff + "ms with "
+                    + args + " returning " + result);
+                return result;
+            }
+        };
+        return (DataSource) Proxy.newProxyInstance(
+            AuthMe.class.getClassLoader(), new Class<?>[]{DataSource.class}, handler);
     }
 
     private void checkDataSourceSize(final DataSource dataSource) {
