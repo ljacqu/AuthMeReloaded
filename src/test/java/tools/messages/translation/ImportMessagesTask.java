@@ -14,7 +14,7 @@ import tools.utils.ToolsConstants;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
@@ -56,7 +56,7 @@ public class ImportMessagesTask implements ToolTask {
     private LanguageExport getLanguageExportFromUrl(String location) {
         try {
             URL url = new URL(location);
-            String json = Resources.toString(url, Charset.forName("UTF-8"));
+            String json = Resources.toString(url, StandardCharsets.UTF_8);
             return gson.fromJson(json, LanguageExport.class);
         } catch (IOException e) {
             throw new IllegalStateException(e);

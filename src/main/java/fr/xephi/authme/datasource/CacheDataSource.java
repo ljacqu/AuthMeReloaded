@@ -8,7 +8,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.cache.auth.PlayerAuth;
 import fr.xephi.authme.cache.auth.PlayerCache;
@@ -139,8 +138,8 @@ public class CacheDataSource implements DataSource {
     }
 
     @Override
-    public Set<String> getRecordsToPurge(long until) {
-        return source.getRecordsToPurge(until);
+    public Set<String> getRecordsToPurge(long until, boolean includeEntriesWithLastLoginZero) {
+        return source.getRecordsToPurge(until, includeEntriesWithLastLoginZero);
     }
 
     @Override

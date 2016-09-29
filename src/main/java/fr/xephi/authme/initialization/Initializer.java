@@ -1,5 +1,8 @@
 package fr.xephi.authme.initialization;
 
+import com.github.authme.configme.knownproperties.PropertyEntry;
+import com.github.authme.configme.resource.PropertyResource;
+import com.github.authme.configme.resource.YamlFileResource;
 import fr.xephi.authme.AuthMe;
 import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.cache.auth.PlayerAuth;
@@ -16,12 +19,11 @@ import fr.xephi.authme.output.MessageKey;
 import fr.xephi.authme.output.Messages;
 import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.SettingsMigrationService;
+import fr.xephi.authme.settings.properties.AuthMeSettingsRetriever;
 import fr.xephi.authme.settings.properties.DatabaseSettings;
 import fr.xephi.authme.settings.properties.EmailSettings;
 import fr.xephi.authme.settings.properties.PluginSettings;
 import fr.xephi.authme.settings.properties.SecuritySettings;
-import fr.xephi.authme.settings.properties.SettingsFieldRetriever;
-import fr.xephi.authme.settings.propertymap.PropertyMap;
 import fr.xephi.authme.util.BukkitService;
 import fr.xephi.authme.util.FileUtils;
 import fr.xephi.authme.util.MigrationService;
@@ -62,14 +64,17 @@ public class Initializer {
     /**
      * Loads the plugin's settings.
      *
-     * @return The settings instance, or null if it could not be constructed
+     * @param authMe the plugin instance
+     * @return the settings instance, or null if it could not be constructed
      */
-    public Settings createSettings() throws Exception {
+    public static Settings createSettings(AuthMe authMe) throws Exception {
+        SettingsMigrationService migrationService = new SettingsMigrationService(authMe.getDataFolder());
+        List<PropertyEntry> knownProperties = AuthMeSettingsRetriever.getAllPropertyFields();
+
         File configFile = new File(authMe.getDataFolder(), "config.yml");
-        PropertyMap properties = SettingsFieldRetriever.getAllPropertyFields();
-        SettingsMigrationService migrationService = new SettingsMigrationService();
         if (FileUtils.copyFileFromResource(configFile, "config.yml")) {
-            return new Settings(configFile, authMe.getDataFolder(), properties, migrationService);
+            PropertyResource resource = new YamlFileResource(configFile);
+            return new Settings(authMe.getDataFolder(), resource, migrationService, knownProperties);
         }
         throw new Exception("Could not copy config.yml from JAR to plugin folder");
     }
@@ -78,6 +83,7 @@ public class Initializer {
      * Sets up the data source.
      *
      * @param settings the settings
+     * @return the constructed datasource
      * @throws ClassNotFoundException if no driver could be found for the datasource
      * @throws SQLException           when initialization of a SQL datasource failed
      * @throws IOException            if flat file cannot be read
