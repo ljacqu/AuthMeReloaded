@@ -1,7 +1,8 @@
 package fr.xephi.authme.command.help;
 
 /**
- * Keys for messages used when showing command help.
+ * Common, non-generic keys for messages used when showing command help.
+ * All keys are prefixed with {@code common}.
  */
 public enum HelpMessageKey {
 
@@ -9,7 +10,25 @@ public enum HelpMessageKey {
 
     DETAILED_DESCRIPTION("description.detailed", "Detailed description"),
 
-    USAGE("usage", "Usage");
+    USAGE("usage", "Usage"),
+
+    ARGUMENTS("arguments", "Arguments"),
+
+    OPTIONAL("optional", "(Optional)"),
+
+    HAS_PERMISSION("hasPermission", "You have permission"),
+
+    NO_PERMISSION("noPermission", "No permission"),
+
+    ALTERNATIVES("alternatives", "Alternatives"),
+
+    DEFAULT("default", "Default"),
+
+    RESULT("result", "Result"),
+
+    PERMISSIONS("permissions", "Permissions"),
+
+    COMMANDS("commands", "Commands");
 
 
     private final String key;
@@ -27,5 +46,4 @@ public enum HelpMessageKey {
     public String getFallback() {
         return fallback;
     }
-
 }
