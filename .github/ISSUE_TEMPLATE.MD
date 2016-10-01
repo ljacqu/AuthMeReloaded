@@ -1,4 +1,4 @@
-####Before reporting an issue make sure you are running the latest build of the plugin!
+####Before reporting an issue make sure you are running the latest build of the plugin and checked for duplicate issues!
 
 ### What behaviour is observed:
 What happened?
@@ -13,7 +13,7 @@ The actions that cause the issue
 This can be found by running `/pl`
 
 ### Environment description
-Standalone server/Bungeecord network, SQLite/MYSql, ...
+Standalone server/Bungeecord network, SQLite/MySql, ...
 
 ### AuthMe build number:
 This can be found by running `/authme version`
@@ -22,4 +22,4 @@ This can be found by running `/authme version`
 Pastebin/Hastebin/Gist link of the error logo or stacktrace (if any)
 
 ### Configuration:
-Pastebin/Hastebin/Gist link of your config.yml file (remember to delete any sensible data)
+Pastebin/Hastebin/Gist link of your config.yml file (remember to delete any sensitive data)

@@ -14,11 +14,13 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The current API of AuthMe. Recommended method of retrieving the API object:
  * <code>
- * NewAPI authmeApi = NewAPI.getInstance();
+ * NewAPI authmeApi = AuthMe.getApi();
  * </code>
  */
 public class NewAPI {
@@ -177,7 +179,7 @@ public class NewAPI {
      * @param player The player to log in
      */
     public void forceLogin(Player player) {
-        management.performLogin(player, "dontneed", true);
+        management.forceLogin(player);
     }
 
     /**
@@ -217,5 +219,36 @@ public class NewAPI {
      */
     public void forceUnregister(Player player) {
         management.performUnregisterByAdmin(null, player.getName(), player);
+    }
+
+    /**
+     * Unregister a player from AuthMe by name.
+     *
+     * @param name the name of the player (case-insensitive)
+     */
+    public void forceUnregister(String name) {
+        management.performUnregisterByAdmin(null, name, Bukkit.getPlayer(name));
+    }
+
+    /**
+     * Get all the registered names (lowercase)
+     *
+     * @return registered names
+     */
+    public List<String> getRegisteredNames() {
+        List<String> registeredNames = new ArrayList<>();
+        dataSource.getAllAuths().forEach(auth -> registeredNames.add(auth.getNickname()));
+        return registeredNames;
+    }
+
+    /**
+     * Get all the registered real-names (original case)
+     *
+     * @return registered real-names
+     */
+    public List<String> getRegisteredRealNames() {
+        List<String> registeredNames = new ArrayList<>();
+        dataSource.getAllAuths().forEach(auth -> registeredNames.add(auth.getRealName()));
+        return registeredNames;
     }
 }

@@ -12,6 +12,7 @@ import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.DatabaseSettings;
 import fr.xephi.authme.settings.properties.HooksSettings;
 import fr.xephi.authme.settings.properties.SecuritySettings;
+import fr.xephi.authme.util.RuntimeUtils;
 import fr.xephi.authme.util.StringUtils;
 
 import java.sql.Blob;
@@ -100,6 +101,9 @@ public class MySQL implements DataSource {
         ds = new HikariDataSource();
         ds.setPoolName("AuthMeMYSQLPool");
 
+        // Pool size
+    	ds.setMaximumPoolSize(RuntimeUtils.getCoreCount());
+
         // Database URL
         ds.setJdbcUrl("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database);
 
@@ -118,7 +122,7 @@ public class MySQL implements DataSource {
 
         // Caching
         ds.addDataSourceProperty("cachePrepStmts", "true");
-        ds.addDataSourceProperty("prepStmtCacheSize", "250");
+        ds.addDataSourceProperty("prepStmtCacheSize", "275");
         ds.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
         ConsoleLogger.info("Connection arguments loaded, Hikari ConnectionPool ready!");
@@ -568,10 +572,13 @@ public class MySQL implements DataSource {
     }
 
     @Override
-    public Set<String> getRecordsToPurge(long until) {
+    public Set<String> getRecordsToPurge(long until, boolean includeEntriesWithLastLoginZero) {
         Set<String> list = new HashSet<>();
 
-        String select = "SELECT " + col.NAME + " FROM " + tableName + " WHERE " + col.LAST_LOGIN + "<?;";
+        String select = "SELECT " + col.NAME + " FROM " + tableName + " WHERE " + col.LAST_LOGIN + " < ?";
+        if (!includeEntriesWithLastLoginZero) {
+            select += " AND " + col.LAST_LOGIN + " <> 0";
+        }
         try (Connection con = getConnection();
              PreparedStatement selectPst = con.prepareStatement(select)) {
             selectPst.setLong(1, until);
@@ -608,7 +615,7 @@ public class MySQL implements DataSource {
                     }
                 }
             }
-            pst.setString(1, user);
+            pst.setString(1, user.toLowerCase());
             pst.executeUpdate();
             return true;
         } catch (SQLException ex) {
