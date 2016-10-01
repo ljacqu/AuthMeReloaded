@@ -13,7 +13,7 @@ import static java.lang.String.format;
 /**
  * File utilities.
  */
-public class FileUtils {
+public final class FileUtils {
 
     private FileUtils() {
     }
@@ -68,7 +68,22 @@ public class FileUtils {
             if (target.isDirectory()) {
                 purgeDirectory(target);
             }
-            target.delete();
+            delete(target);
+        }
+    }
+
+    /**
+     * Delete the given file or directory and log a message if it was unsuccessful.
+     * Method is null safe and does nothing when null is passed.
+     *
+     * @param file the file to delete
+     */
+    public static void delete(File file) {
+        if (file != null) {
+            boolean result = file.delete();
+            if (!result) {
+                ConsoleLogger.warning("Could not delete file '" + file + "'");
+            }
         }
     }
 }

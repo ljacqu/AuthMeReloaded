@@ -4,7 +4,7 @@ import fr.xephi.authme.output.MessageKey;
 import fr.xephi.authme.output.Messages;
 import fr.xephi.authme.permission.PermissionsManager;
 import fr.xephi.authme.permission.PlayerStatePermission;
-import fr.xephi.authme.settings.NewSetting;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.ProtectionSettings;
 import fr.xephi.authme.util.BukkitService;
 import org.bukkit.entity.Player;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.verify;
 public class AntiBotTest {
 
     @Mock
-    private NewSetting settings;
+    private Settings settings;
     @Mock
     private Messages messages;
     @Mock
@@ -167,8 +167,7 @@ public class AntiBotTest {
         antiBot.handlePlayerJoin(player);
 
         // then
-        @SuppressWarnings("unchecked")
-        List<String> playerList = (List<String>) ReflectionTestUtils
+        List<String> playerList = ReflectionTestUtils
             .getFieldValue(AntiBot.class, antiBot, "antibotPlayers");
         assertThat(playerList, hasSize(1));
         verify(bukkitService).scheduleSyncDelayedTask(any(Runnable.class), eq((long) 15 * TICKS_PER_SECOND));
@@ -197,8 +196,7 @@ public class AntiBotTest {
         antiBot.handlePlayerJoin(player);
 
         // then
-        @SuppressWarnings("rawtypes")
-        List<?> playerList = (List) ReflectionTestUtils.getFieldValue(AntiBot.class, antiBot, "antibotPlayers");
+        List<?> playerList = ReflectionTestUtils.getFieldValue(AntiBot.class, antiBot, "antibotPlayers");
         assertThat(playerList, empty());
         verify(bukkitService, never()).scheduleSyncDelayedTask(any(Runnable.class), anyLong());
     }

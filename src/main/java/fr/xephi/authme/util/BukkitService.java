@@ -2,6 +2,9 @@ package fr.xephi.authme.util;
 
 import fr.xephi.authme.AuthMe;
 import fr.xephi.authme.ConsoleLogger;
+import fr.xephi.authme.initialization.SettingsDependent;
+import fr.xephi.authme.settings.Settings;
+import fr.xephi.authme.settings.properties.PluginSettings;
 import org.bukkit.BanEntry;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
@@ -9,9 +12,11 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
-import javax.inject.Inject;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -21,9 +26,9 @@ import java.util.Date;
 import java.util.Set;
 
 /**
- * Service for operations requiring server entities, such as for scheduling.
+ * Service for operations requiring the Bukkit API, such as for scheduling.
  */
-public class BukkitService {
+public class BukkitService implements SettingsDependent {
 
     /** Number of ticks per second in the Bukkit main thread. */
     public static final int TICKS_PER_SECOND = 20;
@@ -33,11 +38,12 @@ public class BukkitService {
     private final AuthMe authMe;
     private final boolean getOnlinePlayersIsCollection;
     private Method getOnlinePlayers;
+    private boolean useAsyncTasks;
 
-    @Inject
-    BukkitService(AuthMe authMe) {
+    public BukkitService(AuthMe authMe, Settings settings) {
         this.authMe = authMe;
         getOnlinePlayersIsCollection = initializeOnlinePlayersIsCollectionField();
+        reload(settings);
     }
 
     /**
@@ -63,6 +69,21 @@ public class BukkitService {
      */
     public int scheduleSyncDelayedTask(Runnable task, long delay) {
         return Bukkit.getScheduler().scheduleSyncDelayedTask(authMe, task, delay);
+    }
+
+    /**
+     * Schedules a synchronous task if async tasks are enabled; if not, it runs the task immediately.
+     * Use this when {@link #runTaskOptionallyAsync(Runnable) optionally asynchronous tasks} have to
+     * run something synchronously.
+     *
+     * @param task the task to be run
+     */
+    public void scheduleSyncTaskFromOptionallyAsyncTask(Runnable task) {
+        if (useAsyncTasks) {
+            scheduleSyncDelayedTask(task);
+        } else {
+            task.run();
+        }
     }
 
     /**
@@ -92,6 +113,20 @@ public class BukkitService {
     }
 
     /**
+     * Schedules this task to run asynchronously or immediately executes it based on
+     * AuthMe's configuration.
+     *
+     * @param task the task to run
+     */
+    public void runTaskOptionallyAsync(Runnable task) {
+        if (useAsyncTasks) {
+            runTaskAsynchronously(task);
+        } else {
+            task.run();
+        }
+    }
+
+    /**
      * <b>Asynchronous tasks should never access any API in Bukkit. Great care
      * should be taken to assure the thread-safety of asynchronous tasks.</b>
      * <p>
@@ -110,17 +145,34 @@ public class BukkitService {
      * <b>Asynchronous tasks should never access any API in Bukkit. Great care
      * should be taken to assure the thread-safety of asynchronous tasks.</b>
      * <p>
-     * Returns a task that will run asynchronously after the specified number
-     * of server ticks.
+     * Returns a task that will repeatedly run asynchronously until cancelled,
+     * starting after the specified number of server ticks.
      *
      * @param task the task to be run
-     * @param delay the ticks to wait before running the task
+     * @param delay the ticks to wait before running the task for the first
+     *     time
+     * @param period the ticks to wait between runs
      * @return a BukkitTask that contains the id number
-     * @throws IllegalArgumentException if plugin is null
      * @throws IllegalArgumentException if task is null
      */
-    public BukkitTask runTaskLaterAsynchronously(Runnable task, long delay) {
-        return Bukkit.getScheduler().runTaskLaterAsynchronously(authMe, task, delay);
+    public BukkitTask runTaskTimerAsynchronously(Runnable task, long delay, long period) {
+        return Bukkit.getScheduler().runTaskTimerAsynchronously(authMe, task, delay, period);
+    }
+
+    /**
+     * Schedules the given task to repeatedly run until cancelled, starting after the
+     * specified number of server ticks.
+     *
+     * @param task the task to schedule
+     * @param delay the ticks to wait before running the task
+     * @param period the ticks to wait between runs
+     * @return a BukkitTask that contains the id number
+     * @throws IllegalArgumentException if plugin is null
+     * @throws IllegalStateException if this was already scheduled
+     * @see BukkitScheduler#runTaskTimer(Plugin, Runnable, long, long)
+     */
+    public BukkitTask runTaskTimer(BukkitRunnable task, long delay, long period) {
+        return task.runTaskTimer(authMe, period, delay);
     }
 
     /**
@@ -217,6 +269,11 @@ public class BukkitService {
      */
     public World getWorld(String name) {
         return Bukkit.getWorld(name);
+    }
+
+    @Override
+    public void reload(Settings settings) {
+        useAsyncTasks = settings.getProperty(PluginSettings.USE_ASYNC_TASKS);
     }
 
     /**

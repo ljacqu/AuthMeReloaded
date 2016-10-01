@@ -1,13 +1,13 @@
 package fr.xephi.authme.process;
 
+import com.github.authme.configme.properties.Property;
 import fr.xephi.authme.output.MessageKey;
 import fr.xephi.authme.output.Messages;
 import fr.xephi.authme.permission.AuthGroupHandler;
 import fr.xephi.authme.permission.AuthGroupType;
 import fr.xephi.authme.permission.PermissionNode;
 import fr.xephi.authme.permission.PermissionsManager;
-import fr.xephi.authme.settings.NewSetting;
-import fr.xephi.authme.settings.domain.Property;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.util.ValidationService;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -20,7 +20,7 @@ import javax.inject.Inject;
 public class ProcessService {
 
     @Inject
-    private NewSetting settings;
+    private Settings settings;
 
     @Inject
     private Messages messages;
@@ -50,7 +50,7 @@ public class ProcessService {
      *
      * @return settings manager
      */
-    public NewSetting getSettings() {
+    public Settings getSettings() {
         return settings;
     }
 

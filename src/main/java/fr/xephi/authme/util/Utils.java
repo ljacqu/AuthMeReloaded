@@ -1,7 +1,6 @@
 package fr.xephi.authme.util;
 
 import fr.xephi.authme.ConsoleLogger;
-import fr.xephi.authme.settings.Settings;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -12,15 +11,12 @@ import java.util.regex.Pattern;
  */
 public final class Utils {
 
-    private Utils() {
-    }
+    /** Number of milliseconds in a minute. */
+    public static final long MILLIS_PER_MINUTE = 60_000L;
+    /** Number of milliseconds in an hour. */
+    public static final long MILLIS_PER_HOUR = 60 * MILLIS_PER_MINUTE;
 
-    @Deprecated
-    public static boolean isUnrestricted(Player player) {
-        // TODO ljacqu 20160602: Checking for Settings.isAllowRestrictedIp is wrong! Nothing in the config suggests
-        // that this setting has anything to do with unrestricted names
-        return Settings.isAllowRestrictedIp
-            && Settings.getUnrestrictedName.contains(player.getName().toLowerCase());
+    private Utils() {
     }
 
     /**
@@ -35,7 +31,7 @@ public final class Utils {
         // so we can have uuid support.
         try {
             return player.getUniqueId().toString();
-        } catch (Exception ignore) {
+        } catch (NoSuchMethodError ignore) {
             return player.getName();
         }
     }
@@ -65,5 +61,21 @@ public final class Utils {
      */
     public static String getPlayerIp(Player p) {
         return p.getAddress().getAddress().getHostAddress();
+    }
+
+    /**
+     * Returns whether the class exists in the current class loader.
+     *
+     * @param className the class name to check
+     *
+     * @return true if the class is loaded, false otherwise
+     */
+    public static boolean isClassLoaded(String className) {
+        try {
+            Class.forName(className);
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

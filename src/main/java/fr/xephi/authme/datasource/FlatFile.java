@@ -1,12 +1,9 @@
 package fr.xephi.authme.datasource;
 
-import com.google.common.annotations.VisibleForTesting;
-import fr.xephi.authme.AuthMe;
 import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.cache.auth.PlayerAuth;
 import fr.xephi.authme.cache.auth.PlayerCache;
 import fr.xephi.authme.security.crypts.HashedPassword;
-import fr.xephi.authme.settings.Settings;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -17,7 +14,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -41,27 +38,11 @@ public class FlatFile implements DataSource {
      */
     private final File source;
 
-    public FlatFile() {
-        AuthMe instance = AuthMe.getInstance();
-
-        source = new File(instance.getDataFolder(), "auths.db");
-        try {
-            source.createNewFile();
-        } catch (IOException e) {
-            ConsoleLogger.logException("Cannot open flatfile", e);
-            if (Settings.isStopEnabled) {
-                ConsoleLogger.warning("Can't use FLAT FILE... SHUTDOWN...");
-                instance.getServer().shutdown();
-            }
-            if (!Settings.isStopEnabled) {
-                instance.getServer().getPluginManager().disablePlugin(instance);
-            }
-        }
-    }
-
-    @VisibleForTesting
-    public FlatFile(File source) {
+    public FlatFile(File source) throws IOException {
         this.source = source;
+        if (!source.exists() && !source.createNewFile()) {
+            throw new IOException("Could not create file '" + source.getPath() + "'");
+        }
     }
 
     @Override
@@ -229,62 +210,13 @@ public class FlatFile implements DataSource {
     }
 
     @Override
-    public Set<String> getRecordsToPurge(long until) {
-        BufferedReader br = null;
-        Set<String> list = new HashSet<>();
-
-        try {
-            br = new BufferedReader(new FileReader(source));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] args = line.split(":");
-                if (args.length >= 4) {
-                    if (Long.parseLong(args[3]) >= until) {
-                        list.add(args[0]);
-                        continue;
-                    }
-                }
-            }
-        } catch (IOException ex) {
-            ConsoleLogger.warning(ex.getMessage());
-            return list;
-        } finally {
-            silentClose(br);
-        }
-
-        return list;
+    public Set<String> getRecordsToPurge(long until, boolean includeEntriesWithLastLoginZero) {
+        throw new UnsupportedOperationException("Flat file no longer supported");
     }
 
     @Override
-    public void purgeRecords(Set<String> toPurge) {
-        BufferedReader br = null;
-        BufferedWriter bw = null;
-        ArrayList<String> lines = new ArrayList<>();
-
-        try {
-            br = new BufferedReader(new FileReader(source));
-            bw = new BufferedWriter(new FileWriter(source));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] args = line.split(":");
-                if (args.length >= 4) {
-                    if (toPurge.contains(args[0])) {
-                        lines.add(line);
-                        continue;
-                    }
-                }
-            }
-
-            for (String l : lines) {
-                bw.write(l + "\n");
-            }
-        } catch (IOException ex) {
-            ConsoleLogger.warning(ex.getMessage());
-            return;
-        } finally {
-            silentClose(br);
-            silentClose(bw);
-        }
+    public void purgeRecords(Collection<String> toPurge) {
+        throw new UnsupportedOperationException("Flat file no longer supported");
     }
 
     @Override

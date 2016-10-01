@@ -1,20 +1,24 @@
 package fr.xephi.authme.settings.properties;
 
-import fr.xephi.authme.settings.domain.Comment;
-import fr.xephi.authme.settings.domain.Property;
-import fr.xephi.authme.settings.domain.SettingsClass;
+import com.github.authme.configme.Comment;
+import com.github.authme.configme.SettingsHolder;
+import com.github.authme.configme.properties.Property;
 
 import java.util.List;
 
-import static fr.xephi.authme.settings.domain.Property.newListProperty;
-import static fr.xephi.authme.settings.domain.Property.newProperty;
+import static com.github.authme.configme.properties.PropertyInitializer.newListProperty;
+import static com.github.authme.configme.properties.PropertyInitializer.newProperty;
 
 
-public class ProtectionSettings implements SettingsClass {
+public class ProtectionSettings implements SettingsHolder {
 
     @Comment("Enable some servers protection (country based login, antibot)")
     public static final Property<Boolean> ENABLE_PROTECTION =
         newProperty("Protection.enableProtection", false);
+
+    @Comment("Apply the protection also to registered usernames")
+    public static final Property<Boolean> ENABLE_PROTECTION_REGISTERED =
+        newProperty("Protection.enableProtectionRegistered", true);
 
     @Comment({"Countries allowed to join the server and register, see http://dev.bukkit.org/bukkit-plugins/authme-reloaded/pages/countries-codes/ for countries' codes",
             "PLEASE USE QUOTES!"})

@@ -45,12 +45,7 @@ public class VaultHandler implements PermissionHandler {
     }
 
     @Override
-    public boolean hasPermission(Player player, PermissionNode node) {
-        return vaultProvider.has(player, node.getNode());
-    }
-
-    @Override
-    public boolean hasPermission(String name, PermissionNode node) {
+    public boolean hasPermissionOffline(String name, PermissionNode node) {
         return vaultProvider.has("", name, node.getNode());
     }
 

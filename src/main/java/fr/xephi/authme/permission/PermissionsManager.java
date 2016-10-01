@@ -3,7 +3,6 @@ package fr.xephi.authme.permission;
 import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.initialization.Reloadable;
 import fr.xephi.authme.permission.handlers.BPermissionsHandler;
-import fr.xephi.authme.permission.handlers.GroupManagerHandler;
 import fr.xephi.authme.permission.handlers.PermissionHandler;
 import fr.xephi.authme.permission.handlers.PermissionHandlerException;
 import fr.xephi.authme.permission.handlers.PermissionsBukkitHandler;
@@ -11,7 +10,7 @@ import fr.xephi.authme.permission.handlers.PermissionsExHandler;
 import fr.xephi.authme.permission.handlers.VaultHandler;
 import fr.xephi.authme.permission.handlers.ZPermissionsHandler;
 import fr.xephi.authme.util.StringUtils;
-import org.anjocaido.groupmanager.GroupManager;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -109,8 +108,6 @@ public class PermissionsManager implements Reloadable {
         switch (type) {
             case PERMISSIONS_EX:
                 return new PermissionsExHandler();
-            case ESSENTIALS_GROUP_MANAGER:
-                return new GroupManagerHandler((GroupManager) plugin);
             case Z_PERMISSIONS:
                 return new ZPermissionsHandler();
             case VAULT:
@@ -197,35 +194,46 @@ public class PermissionsManager implements Reloadable {
             return true;
         }
 
-        // Return if the player is an Op if sender is console or no permission system in use
+        // Return default if sender is not a player or no permission system is in use
         if (!(sender instanceof Player) || !isEnabled()) {
             return permissionNode.getDefaultPermission().evaluate(sender);
         }
 
         Player player = (Player) sender;
-        return handler.hasPermission(player, permissionNode);
+        return player.hasPermission(permissionNode.getNode());
     }
 
     /**
      * Check if a player has permission for the given permission node. This is for offline player checks. If no permissions
      * system is used, then the player will not have permission.
      *
-     * @param name           The name of the player.
-     * @param permissionNode The permission node to verify.
+     * @param player         The offline player
+     * @param permissionNode The permission node to verify
      *
-     * @return
+     * @return true if the player has permission, false otherwise
      */
-    public boolean hasPermissionOffline(String name, PermissionNode permissionNode) {
+    public boolean hasPermissionOffline(OfflinePlayer player, PermissionNode permissionNode) {
         // Check if the permission node is null
         if (permissionNode == null) {
             return true;
         }
 
         if (!isEnabled()) {
-            return permissionNode.getDefaultPermission().evaluateOffline(name);
+            return permissionNode.getDefaultPermission().evaluate(player);
         }
 
-        return handler.hasPermission(name, permissionNode);
+        return handler.hasPermissionOffline(player.getName(), permissionNode);
+    }
+
+    public boolean hasPermissionOffline(String name, PermissionNode permissionNode) {
+        if (permissionNode == null) {
+            return true;
+        }
+        if (!isEnabled()) {
+            return permissionNode.getDefaultPermission().evaluate(null);
+        }
+
+        return handler.hasPermissionOffline(name, permissionNode);
     }
 
     /**
@@ -417,11 +425,12 @@ public class PermissionsManager implements Reloadable {
         boolean result = true;
         for (int i = 1; i < groupNames.size(); i++) {
             // Get the group name
-            String groupName = groupNames.get(0);
+            String groupName = groupNames.get(i);
 
             // Add this group
-            if (!addGroup(player, groupName))
+            if (!addGroup(player, groupName)) {
                 result = false;
+            }
         }
 
         // Return the result

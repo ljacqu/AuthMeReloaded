@@ -1,12 +1,12 @@
 package fr.xephi.authme.util;
 
+import com.github.authme.configme.properties.Property;
 import fr.xephi.authme.datasource.DataSource;
 import fr.xephi.authme.initialization.Reloadable;
 import fr.xephi.authme.output.MessageKey;
 import fr.xephi.authme.permission.PermissionsManager;
 import fr.xephi.authme.permission.PlayerStatePermission;
-import fr.xephi.authme.settings.NewSetting;
-import fr.xephi.authme.settings.domain.Property;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.EmailSettings;
 import fr.xephi.authme.settings.properties.ProtectionSettings;
 import fr.xephi.authme.settings.properties.RestrictionSettings;
@@ -16,7 +16,9 @@ import org.bukkit.command.CommandSender;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -25,7 +27,7 @@ import java.util.regex.Pattern;
 public class ValidationService implements Reloadable {
 
     @Inject
-    private NewSetting settings;
+    private Settings settings;
     @Inject
     private DataSource dataSource;
     @Inject
@@ -34,6 +36,7 @@ public class ValidationService implements Reloadable {
     private GeoLiteAPI geoLiteApi;
 
     private Pattern passwordRegex;
+    private Set<String> unrestrictedNames;
 
     ValidationService() { }
 
@@ -41,6 +44,8 @@ public class ValidationService implements Reloadable {
     @Override
     public void reload() {
         passwordRegex = Utils.safePatternCompile(settings.getProperty(RestrictionSettings.ALLOWED_PASSWORD_REGEX));
+        // Use Set for more efficient contains() lookup
+        unrestrictedNames = new HashSet<>(settings.getProperty(RestrictionSettings.UNRESTRICTED_NAMES));
     }
 
     /**
@@ -111,6 +116,16 @@ public class ValidationService implements Reloadable {
         return validateWhitelistAndBlacklist(countryCode,
             ProtectionSettings.COUNTRIES_WHITELIST,
             ProtectionSettings.COUNTRIES_BLACKLIST);
+    }
+
+    /**
+     * Checks if the name is unrestricted according to the configured settings.
+     *
+     * @param name the name to verify
+     * @return true if unrestricted, false otherwise
+     */
+    public boolean isUnrestricted(String name) {
+        return unrestrictedNames.contains(name.toLowerCase());
     }
 
     /**

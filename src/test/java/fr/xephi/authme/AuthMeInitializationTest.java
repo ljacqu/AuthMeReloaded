@@ -1,18 +1,21 @@
 package fr.xephi.authme;
 
+import ch.jalu.injector.Injector;
+import ch.jalu.injector.InjectorBuilder;
+import com.github.authme.configme.resource.PropertyResource;
 import com.google.common.io.Files;
 import fr.xephi.authme.api.NewAPI;
 import fr.xephi.authme.command.CommandHandler;
 import fr.xephi.authme.datasource.DataSource;
-import fr.xephi.authme.initialization.AuthMeServiceInitializer;
 import fr.xephi.authme.initialization.DataFolder;
-import fr.xephi.authme.listener.AuthMeBlockListener;
+import fr.xephi.authme.listener.BlockListener;
 import fr.xephi.authme.permission.PermissionsManager;
 import fr.xephi.authme.process.Management;
 import fr.xephi.authme.process.login.ProcessSyncPlayerLogin;
 import fr.xephi.authme.security.PasswordSecurity;
-import fr.xephi.authme.settings.NewSetting;
-import fr.xephi.authme.task.PurgeService;
+import fr.xephi.authme.settings.Settings;
+import fr.xephi.authme.task.purge.PurgeService;
+import fr.xephi.authme.util.BukkitService;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -33,7 +36,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import static fr.xephi.authme.settings.TestSettingsMigrationServices.alwaysFulfilled;
-import static fr.xephi.authme.settings.properties.SettingsFieldRetriever.getAllPropertyFields;
+import static fr.xephi.authme.settings.properties.AuthMeSettingsRetriever.getAllPropertyFields;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -42,7 +45,7 @@ import static org.mockito.Mockito.mock;
 
 /**
  * Integration test verifying that all services can be initialized in {@link AuthMe}
- * with the {@link AuthMeServiceInitializer}.
+ * with the {@link Injector}.
  */
 @RunWith(MockitoJUnitRunner.class)
 public class AuthMeInitializationTest {
@@ -91,35 +94,33 @@ public class AuthMeInitializationTest {
     @Test
     public void shouldInitializeAllServices() {
         // given
-        NewSetting settings = new NewSetting(settingsFile, dataFolder, getAllPropertyFields(), alwaysFulfilled());
+        Settings settings =
+            new Settings(dataFolder, mock(PropertyResource.class), alwaysFulfilled(), getAllPropertyFields());
 
-        // TODO ljacqu 20160619: At some point setting the "plugin" field should not longer be necessary
-        // We only require it right now because of usages of AuthMe#getInstance()
-        ReflectionTestUtils.setField(AuthMe.class, null, "plugin", authMe);
+        Injector injector = new InjectorBuilder().addDefaultHandlers("fr.xephi.authme").create();
+        injector.provide(DataFolder.class, dataFolder);
+        injector.register(Server.class, server);
+        injector.register(PluginManager.class, pluginManager);
 
-        AuthMeServiceInitializer initializer = new AuthMeServiceInitializer("fr.xephi.authme");
-        initializer.provide(DataFolder.class, dataFolder);
-        initializer.register(Server.class, server);
-        initializer.register(PluginManager.class, pluginManager);
-
-        initializer.register(AuthMe.class, authMe);
-        initializer.register(NewSetting.class, settings);
-        initializer.register(DataSource.class, mock(DataSource.class));
+        injector.register(AuthMe.class, authMe);
+        injector.register(Settings.class, settings);
+        injector.register(DataSource.class, mock(DataSource.class));
+        injector.register(BukkitService.class, mock(BukkitService.class));
 
         // when
-        authMe.instantiateServices(initializer);
-        authMe.registerEventListeners(initializer);
+        authMe.instantiateServices(injector);
+        authMe.registerEventListeners(injector);
 
         // then
         // Take a few samples and ensure that they are not null
-        assertThat(initializer.getIfAvailable(AuthMeBlockListener.class), not(nullValue()));
-        assertThat(initializer.getIfAvailable(CommandHandler.class), not(nullValue()));
-        assertThat(initializer.getIfAvailable(Management.class), not(nullValue()));
-        assertThat(initializer.getIfAvailable(NewAPI.class), not(nullValue()));
-        assertThat(initializer.getIfAvailable(PasswordSecurity.class), not(nullValue()));
-        assertThat(initializer.getIfAvailable(PermissionsManager.class), not(nullValue()));
-        assertThat(initializer.getIfAvailable(ProcessSyncPlayerLogin.class), not(nullValue()));
-        assertThat(initializer.getIfAvailable(PurgeService.class), not(nullValue()));
+        assertThat(injector.getIfAvailable(BlockListener.class), not(nullValue()));
+        assertThat(injector.getIfAvailable(CommandHandler.class), not(nullValue()));
+        assertThat(injector.getIfAvailable(Management.class), not(nullValue()));
+        assertThat(injector.getIfAvailable(NewAPI.class), not(nullValue()));
+        assertThat(injector.getIfAvailable(PasswordSecurity.class), not(nullValue()));
+        assertThat(injector.getIfAvailable(PermissionsManager.class), not(nullValue()));
+        assertThat(injector.getIfAvailable(ProcessSyncPlayerLogin.class), not(nullValue()));
+        assertThat(injector.getIfAvailable(PurgeService.class), not(nullValue()));
     }
 
 }

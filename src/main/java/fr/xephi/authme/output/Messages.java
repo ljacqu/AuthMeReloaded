@@ -2,8 +2,7 @@ package fr.xephi.authme.output;
 
 import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.initialization.SettingsDependent;
-import fr.xephi.authme.settings.NewSetting;
-import fr.xephi.authme.util.StringUtils;
+import fr.xephi.authme.settings.Settings;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -19,6 +18,9 @@ import java.io.InputStreamReader;
  */
 public class Messages implements SettingsDependent {
 
+    // Custom Authme tag replaced to new line
+    private static final String NEWLINE_TAG = "%nl%";
+
     private FileConfiguration configuration;
     private String fileName;
     private final String defaultFile;
@@ -30,7 +32,7 @@ public class Messages implements SettingsDependent {
      * @param settings The settings
      */
     @Inject
-    Messages(NewSetting settings) {
+    Messages(Settings settings) {
         reload(settings);
         this.defaultFile = settings.getDefaultMessagesFile();
     }
@@ -71,18 +73,12 @@ public class Messages implements SettingsDependent {
      * @return The message split by new lines
      */
     public String[] retrieve(MessageKey key) {
-        final String code = key.getKey();
-        String message = configuration.getString(code);
-
-        if (message == null) {
-            ConsoleLogger.warning("Error getting message with key '" + code + "'. "
-                + "Please verify your config file at '" + fileName + "'");
-            return formatMessage(getDefault(code));
-        }
-        if(message.isEmpty()) {
+        String message = retrieveMessage(key);
+        if (message.isEmpty()) {
+            // Return empty array instead of array with 1 empty string as entry
             return new String[0];
         }
-        return formatMessage(message);
+        return message.split("\n");
     }
 
     /**
@@ -91,8 +87,16 @@ public class Messages implements SettingsDependent {
      * @param key The message key to retrieve
      * @return The message from the file
      */
-    public String retrieveSingle(MessageKey key) {
-        return StringUtils.join("\n", retrieve(key));
+    private String retrieveMessage(MessageKey key) {
+        final String code = key.getKey();
+        String message = configuration.getString(code);
+
+        if (message == null) {
+            ConsoleLogger.warning("Error getting message with key '" + code + "'. "
+                + "Please verify your config file at '" + fileName + "'");
+            return formatMessage(getDefault(code));
+        }
+        return formatMessage(message);
     }
 
     /**
@@ -105,7 +109,7 @@ public class Messages implements SettingsDependent {
      * @return The message from the file with replacements
      */
     public String retrieveSingle(MessageKey key, String... replacements) {
-        String message = retrieveSingle(key);
+        String message = retrieveMessage(key);
         String[] tags = key.getTags();
         if (replacements.length == tags.length) {
             for (int i = 0; i < tags.length; ++i) {
@@ -118,7 +122,7 @@ public class Messages implements SettingsDependent {
     }
 
     @Override
-    public void reload(NewSetting settings) {
+    public void reload(Settings settings) {
         File messageFile = settings.getMessagesFile();
         this.configuration = YamlConfiguration.loadConfiguration(messageFile);
         this.fileName = messageFile.getName();
@@ -141,12 +145,9 @@ public class Messages implements SettingsDependent {
         return "Error retrieving message '" + code + "'";
     }
 
-    private static String[] formatMessage(String message) {
-        String[] lines = message.split("&n");
-        for (int i = 0; i < lines.length; ++i) {
-            lines[i] = ChatColor.translateAlternateColorCodes('&', lines[i]);
-        }
-        return lines;
+    private static String formatMessage(String message) {
+        return ChatColor.translateAlternateColorCodes('&', message)
+            .replace(NEWLINE_TAG, "\n");
     }
 
 }

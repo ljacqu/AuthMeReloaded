@@ -23,12 +23,7 @@ public class BPermissionsHandler implements PermissionHandler {
     }
 
     @Override
-    public boolean hasPermission(Player player, PermissionNode node) {
-        return ApiLayer.hasPermission(player.getWorld().getName(), CalculableType.USER, player.getName(), node.getNode());
-    }
-
-    @Override
-    public boolean hasPermission(String name, PermissionNode node) {
+    public boolean hasPermissionOffline(String name, PermissionNode node) {
         return ApiLayer.hasPermission(null, CalculableType.USER, name, node.getNode());
     }
 

@@ -9,7 +9,7 @@ import fr.xephi.authme.events.AuthMeTeleportEvent;
 import fr.xephi.authme.events.FirstSpawnTeleportEvent;
 import fr.xephi.authme.events.SpawnTeleportEvent;
 import fr.xephi.authme.initialization.Reloadable;
-import fr.xephi.authme.settings.NewSetting;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.SpawnLoader;
 import fr.xephi.authme.settings.properties.RestrictionSettings;
 import org.bukkit.Location;
@@ -29,7 +29,7 @@ import static fr.xephi.authme.settings.properties.RestrictionSettings.TELEPORT_U
 public class TeleportationService implements Reloadable {
 
     @Inject
-    private NewSetting settings;
+    private Settings settings;
 
     @Inject
     private BukkitService bukkitService;
@@ -64,14 +64,12 @@ public class TeleportationService implements Reloadable {
      * as fast as possible (cf. <a href="https://github.com/Xephi/AuthMeReloaded/issues/682">AuthMe #682</a>).
      *
      * @param player the player to process
-     * @see <a href="https://bukkit.atlassian.net/browse/BUKKIT-3521">BUKKIT-3521: Player.hasPlayedBefore() always false</a>
+     * @see <a href="https://bukkit.atlassian.net/browse/BUKKIT-3521">BUKKIT-3521: Player.hasPlayedBefore()
+     * always false</a>
      */
     public void teleportOnJoin(final Player player) {
-        if (settings.getProperty(RestrictionSettings.NO_TELEPORT)) {
-            return;
-        }
-
-        if (settings.getProperty(TELEPORT_UNAUTHED_TO_SPAWN) || mustForceSpawnAfterLogin(player.getWorld().getName())) {
+        if (!settings.getProperty(RestrictionSettings.NO_TELEPORT)
+            && settings.getProperty(TELEPORT_UNAUTHED_TO_SPAWN)) {
             teleportToSpawn(player, playerCache.isAuthenticated(player.getName()));
         }
     }
@@ -108,22 +106,26 @@ public class TeleportationService implements Reloadable {
             return;
         }
 
+        // #856: If PlayerData comes from a persisted file, the Location might be null
+        String worldName = (limbo != null && limbo.getLocation() != null)
+            ? limbo.getLocation().getWorld().getName()
+            : null;
+
         // The world in PlayerData is from where the player comes, before any teleportation by AuthMe
-        String worldName = limbo.getLocation().getWorld().getName();
         if (mustForceSpawnAfterLogin(worldName)) {
             teleportToSpawn(player, true);
         } else if (settings.getProperty(TELEPORT_UNAUTHED_TO_SPAWN)) {
             if (settings.getProperty(RestrictionSettings.SAVE_QUIT_LOCATION) && auth.getQuitLocY() != 0) {
                 Location location = buildLocationFromAuth(player, auth);
                 teleportBackFromSpawn(player, location);
-            } else {
+            } else if (limbo != null && limbo.getLocation() != null) {
                 teleportBackFromSpawn(player, limbo.getLocation());
             }
         }
     }
 
     private boolean mustForceSpawnAfterLogin(String worldName) {
-        return settings.getProperty(RestrictionSettings.FORCE_SPAWN_LOCATION_AFTER_LOGIN)
+        return worldName != null && settings.getProperty(RestrictionSettings.FORCE_SPAWN_LOCATION_AFTER_LOGIN)
             && spawnOnLoginWorlds.contains(worldName);
     }
 

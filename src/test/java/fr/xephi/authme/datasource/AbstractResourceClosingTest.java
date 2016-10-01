@@ -1,5 +1,6 @@
 package fr.xephi.authme.datasource;
 
+import com.github.authme.configme.properties.Property;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -8,8 +9,7 @@ import fr.xephi.authme.TestHelper;
 import fr.xephi.authme.cache.auth.PlayerAuth;
 import fr.xephi.authme.security.HashAlgorithm;
 import fr.xephi.authme.security.crypts.HashedPassword;
-import fr.xephi.authme.settings.NewSetting;
-import fr.xephi.authme.settings.domain.Property;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.SecuritySettings;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -72,7 +72,7 @@ public abstract class AbstractResourceClosingTest {
     private static final Map<String, HashAlgorithm[]> CUSTOM_ALGORITHMS = getCustomAlgorithmList();
 
     /** Mock of a settings instance. */
-    private static NewSetting settings;
+    private static Settings settings;
 
     /** The datasource to test. */
     private DataSource dataSource;
@@ -101,7 +101,7 @@ public abstract class AbstractResourceClosingTest {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @BeforeClass
     public static void initializeSettings() throws IOException, ClassNotFoundException {
-        settings = mock(NewSetting.class);
+        settings = mock(Settings.class);
         given(settings.getProperty(any(Property.class))).willAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) {
@@ -152,7 +152,7 @@ public abstract class AbstractResourceClosingTest {
     }
 
     /* Create a DataSource instance with the given mock settings and mock connection. */
-    protected abstract DataSource createDataSource(NewSetting settings, Connection connection) throws Exception;
+    protected abstract DataSource createDataSource(Settings settings, Connection connection) throws Exception;
 
     /* Get all methods of the DataSource interface, minus the ones in the ignored list. */
     private static List<Method> getDataSourceMethods() {
@@ -219,7 +219,7 @@ public abstract class AbstractResourceClosingTest {
 
             Object element = PARAM_VALUES.get(genericType);
             Preconditions.checkNotNull(element, "No sample element for list of generic type " + genericType);
-            if (List.class == parameterizedType.getRawType()) {
+            if (isAssignableFrom(parameterizedType.getRawType(), List.class)) {
                 return Arrays.asList(element, element, element);
             } else if (Set.class == parameterizedType.getRawType()) {
                 return new HashSet<>(Arrays.asList(element, element, element));
@@ -229,6 +229,11 @@ public abstract class AbstractResourceClosingTest {
         throw new IllegalStateException("Cannot build list for unexpected Type: " + type);
     }
 
+    private static boolean isAssignableFrom(Type type, Class<?> fromType) {
+        return (type instanceof Class<?>)
+            && ((Class<?>) type).isAssignableFrom(fromType);
+    }
+
     /* Initialize the map of test values to pass to methods to satisfy their signature. */
     private static Map<Class<?>, Object> getDefaultParameters() {
         HashedPassword hash = new HashedPassword("test", "test");
@@ -236,6 +241,7 @@ public abstract class AbstractResourceClosingTest {
             .put(String.class, "test")
             .put(int.class, 3)
             .put(long.class, 102L)
+            .put(boolean.class, true)
             .put(PlayerAuth.class, PlayerAuth.builder().name("test").realName("test").password(hash).build())
             .put(HashedPassword.class, hash)
             .build();

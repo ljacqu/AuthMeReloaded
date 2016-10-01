@@ -3,7 +3,7 @@ package fr.xephi.authme.cache.limbo;
 import fr.xephi.authme.ReflectionTestUtils;
 import fr.xephi.authme.cache.backup.PlayerDataStorage;
 import fr.xephi.authme.permission.PermissionsManager;
-import fr.xephi.authme.settings.NewSetting;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.SpawnLoader;
 import fr.xephi.authme.settings.properties.PluginSettings;
 import org.bukkit.Location;
@@ -35,7 +35,7 @@ public class LimboCacheTest {
     private LimboCache limboCache;
 
     @Mock
-    private NewSetting settings;
+    private Settings settings;
 
     @Mock
     private PermissionsManager permissionsManager;
@@ -138,6 +138,31 @@ public class LimboCacheTest {
     }
 
     @Test
+    public void shouldResetPlayerSpeed() {
+        // given
+        String name = "Champ";
+        Player player = mock(Player.class);
+        given(player.getName()).willReturn(name);
+        PlayerData playerData = mock(PlayerData.class);
+        given(playerData.isOperator()).willReturn(true);
+        given(playerData.getWalkSpeed()).willReturn(0f);
+        given(playerData.isCanFly()).willReturn(true);
+        given(playerData.getFlySpeed()).willReturn(0f);
+        String group = "primary-group";
+        given(playerData.getGroup()).willReturn(group);
+        getCache().put(name.toLowerCase(), playerData);
+        given(settings.getProperty(PluginSettings.ENABLE_PERMISSION_CHECK)).willReturn(true);
+        given(permissionsManager.hasGroupSupport()).willReturn(true);
+
+        // when
+        limboCache.restoreData(player);
+
+        // then
+        verify(player).setWalkSpeed(0.2f);
+        verify(player).setFlySpeed(0.2f);
+    }
+
+    @Test
     public void shouldNotInteractWithPlayerIfNoDataAvailable() {
         // given
         String name = "player";
@@ -199,8 +224,7 @@ public class LimboCacheTest {
         assertThat(limboCache.hasPlayerData("someone_else"), equalTo(false));
     }
 
-    @SuppressWarnings("unchecked")
     private Map<String, PlayerData> getCache() {
-        return (Map<String, PlayerData>) ReflectionTestUtils.getFieldValue(LimboCache.class, limboCache, "cache");
+        return ReflectionTestUtils.getFieldValue(LimboCache.class, limboCache, "cache");
     }
 }

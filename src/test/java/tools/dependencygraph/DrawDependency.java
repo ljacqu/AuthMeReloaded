@@ -1,21 +1,25 @@
 package tools.dependencygraph;
 
+import ch.jalu.injector.handlers.instantiation.DependencyDescription;
+import ch.jalu.injector.handlers.instantiation.Instantiation;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
+import fr.xephi.authme.ClassCollector;
+import fr.xephi.authme.TestHelper;
 import fr.xephi.authme.command.ExecutableCommand;
 import fr.xephi.authme.converter.Converter;
-import fr.xephi.authme.initialization.Injection;
-import fr.xephi.authme.initialization.InjectionHelper;
+import fr.xephi.authme.initialization.DataFolder;
 import fr.xephi.authme.process.AsynchronousProcess;
 import fr.xephi.authme.process.SynchronousProcess;
 import fr.xephi.authme.security.crypts.EncryptionMethod;
 import org.bukkit.event.Listener;
+import tools.utils.InjectorUtils;
 import tools.utils.ToolTask;
 import tools.utils.ToolsConstants;
 
-import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -31,11 +35,12 @@ import java.util.Scanner;
 public class DrawDependency implements ToolTask {
 
     private static final String DOT_FILE = ToolsConstants.TOOLS_SOURCE_ROOT + "dependencygraph/graph.dot";
-    // Package root
-    private static final String ROOT_PACKAGE = "fr.xephi.authme";
 
     private static final List<Class<?>> SUPER_TYPES = ImmutableList.of(ExecutableCommand.class,
         SynchronousProcess.class, AsynchronousProcess.class, EncryptionMethod.class, Converter.class, Listener.class);
+
+    /** Annotation types by which dependencies are identified. */
+    private static final List<Class<? extends Annotation>> ANNOTATION_TYPES = ImmutableList.of(DataFolder.class);
 
     private boolean mapToSupertype;
     // Map with the graph's nodes: value is one of the key's dependencies
@@ -52,7 +57,10 @@ public class DrawDependency implements ToolTask {
         mapToSupertype = "y".equalsIgnoreCase(scanner.nextLine());
 
         // Gather all connections
-        readAndProcessFiles(new File(ToolsConstants.MAIN_SOURCE_ROOT));
+        ClassCollector collector = new ClassCollector(TestHelper.SOURCES_FOLDER, TestHelper.PROJECT_ROOT);
+        for (Class<?> clazz : collector.collectClasses()) {
+            processClass(clazz);
+        }
 
         // Prompt user for simplification of graph
         System.out.println("Do you want to remove classes that are not used as dependency elsewhere?");
@@ -86,28 +94,6 @@ public class DrawDependency implements ToolTask {
         System.out.format("Run 'dot -Tpng %s -o graph.png' to generate image (requires GraphViz)%n", DOT_FILE);
     }
 
-    /**
-     * Recursively reads the given directory and processes the files.
-     *
-     * @param dir the directory to read
-     */
-    private void readAndProcessFiles(File dir) {
-        File[] files = dir.listFiles();
-        if (files == null) {
-            throw new IllegalStateException("Cannot read folder '" + dir + "'");
-        }
-        for (File file : files) {
-            if (file.isDirectory()) {
-                readAndProcessFiles(file);
-            } else if (file.isFile()) {
-                Class<?> clazz = loadClass(file);
-                if (clazz != null) {
-                    processClass(clazz);
-                }
-            }
-        }
-    }
-
     private void processClass(Class<?> clazz) {
         List<String> dependencies = getDependencies(clazz);
         if (dependencies != null) {
@@ -127,24 +113,9 @@ public class DrawDependency implements ToolTask {
         return clazz;
     }
 
-    // Load Class object for the class in the given file
-    private static Class<?> loadClass(File file) {
-        final String fileName = file.getPath().replace(File.separator, ".");
-        if (!fileName.endsWith(".java")) {
-            return null;
-        }
-        final String className = fileName
-            .substring(fileName.indexOf(ROOT_PACKAGE), fileName.length() - ".java".length());
-        try {
-            return DrawDependency.class.getClassLoader().loadClass(className);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     private List<String> getDependencies(Class<?> clazz) {
-        Injection<?> injection = InjectionHelper.getInjection(clazz);
-        return injection == null ? null : formatInjectionDependencies(injection);
+        Instantiation<?> instantiation = InjectorUtils.getInstantiationMethod(clazz);
+        return instantiation == null ? null : formatInjectionDependencies(instantiation);
     }
 
     /**
@@ -155,9 +126,15 @@ public class DrawDependency implements ToolTask {
      * @param injection the injection whose dependencies should be formatted
      * @return list of dependencies in a friendly format
      */
-    private List<String> formatInjectionDependencies(Injection<?> injection) {
-        Class<?>[] dependencies = injection.getDependencies();
-        Class<?>[] annotations = injection.getDependencyAnnotations();
+    private List<String> formatInjectionDependencies(Instantiation<?> injection) {
+        List<? extends DependencyDescription> descriptions = injection.getDependencies();
+        final int totalDependencies = descriptions.size();
+        Class<?>[] dependencies = new Class<?>[totalDependencies];
+        Class<?>[] annotations = new Class<?>[totalDependencies];
+        for (int i = 0; i < descriptions.size(); ++i) {
+            dependencies[i] = descriptions.get(i).getType();
+            annotations[i] = getRelevantAnnotationClass(descriptions.get(i).getAnnotations());
+        }
 
         List<String> result = new ArrayList<>(dependencies.length);
         for (int i = 0; i < dependencies.length; ++i) {
@@ -168,6 +145,15 @@ public class DrawDependency implements ToolTask {
             }
         }
         return result;
+    }
+
+    private static Class<? extends Annotation> getRelevantAnnotationClass(Annotation[] annotations) {
+        for (Annotation annotation : annotations) {
+            if (ANNOTATION_TYPES.contains(annotation.annotationType())) {
+                return annotation.annotationType();
+            }
+        }
+        return null;
     }
 
     /**

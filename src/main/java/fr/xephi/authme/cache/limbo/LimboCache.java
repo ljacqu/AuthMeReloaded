@@ -2,7 +2,7 @@ package fr.xephi.authme.cache.limbo;
 
 import fr.xephi.authme.cache.backup.PlayerDataStorage;
 import fr.xephi.authme.permission.PermissionsManager;
-import fr.xephi.authme.settings.NewSetting;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.SpawnLoader;
 import fr.xephi.authme.settings.properties.PluginSettings;
 import fr.xephi.authme.util.StringUtils;
@@ -23,12 +23,12 @@ public class LimboCache {
     private final Map<String, PlayerData> cache = new ConcurrentHashMap<>();
 
     private PlayerDataStorage playerDataStorage;
-    private NewSetting settings;
+    private Settings settings;
     private PermissionsManager permissionsManager;
     private SpawnLoader spawnLoader;
 
     @Inject
-    LimboCache(NewSetting settings, PermissionsManager permissionsManager,
+    LimboCache(Settings settings, PermissionsManager permissionsManager,
                SpawnLoader spawnLoader, PlayerDataStorage playerDataStorage) {
         this.settings = settings;
         this.permissionsManager = permissionsManager;
@@ -81,8 +81,17 @@ public class LimboCache {
             PlayerData data = cache.get(lowerName);
             player.setOp(data.isOperator());
             player.setAllowFlight(data.isCanFly());
-            player.setWalkSpeed(data.getWalkSpeed());
-            player.setFlySpeed(data.getFlySpeed());
+            float walkSpeed = data.getWalkSpeed();
+            float flySpeed = data.getFlySpeed();
+            // Reset the speed value if it was 0
+            if(walkSpeed == 0f) {
+                walkSpeed = 0.2f;
+            }
+            if(flySpeed == 0f) {
+                flySpeed = 0.2f;
+            }
+            player.setWalkSpeed(walkSpeed);
+            player.setFlySpeed(flySpeed);
             restoreGroup(player, data.getGroup());
             data.clearTasks();
         }
@@ -147,10 +156,9 @@ public class LimboCache {
     }
 
     private void restoreGroup(Player player, String group) {
-        if (!settings.getProperty(PluginSettings.ENABLE_PERMISSION_CHECK)
-            || !permissionsManager.hasGroupSupport() || StringUtils.isEmpty(group)) {
-            return;
+        if (!StringUtils.isEmpty(group) && permissionsManager.hasGroupSupport()
+            && settings.getProperty(PluginSettings.ENABLE_PERMISSION_CHECK)) {
+            permissionsManager.setGroup(player, group);
         }
-        permissionsManager.setGroup(player, group);
     }
 }

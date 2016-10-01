@@ -1,16 +1,16 @@
 package fr.xephi.authme.settings.properties;
 
-import fr.xephi.authme.settings.domain.Comment;
-import fr.xephi.authme.settings.domain.Property;
-import fr.xephi.authme.settings.domain.SettingsClass;
+import com.github.authme.configme.Comment;
+import com.github.authme.configme.SettingsHolder;
+import com.github.authme.configme.properties.Property;
 
 import java.util.List;
 
-import static fr.xephi.authme.settings.domain.Property.newListProperty;
-import static fr.xephi.authme.settings.domain.Property.newLowercaseListProperty;
-import static fr.xephi.authme.settings.domain.Property.newProperty;
+import static com.github.authme.configme.properties.PropertyInitializer.newListProperty;
+import static com.github.authme.configme.properties.PropertyInitializer.newLowercaseListProperty;
+import static com.github.authme.configme.properties.PropertyInitializer.newProperty;
 
-public class RestrictionSettings implements SettingsClass {
+public class RestrictionSettings implements SettingsHolder {
 
     @Comment({
         "Can not authenticated players chat?",
@@ -50,11 +50,11 @@ public class RestrictionSettings implements SettingsClass {
         newProperty("settings.restrictions.ForceSingleSession", true);
 
     @Comment({
-        "If enabled, every player will be teleported to the world spawnpoint",
-        "after successful authentication.",
+        "If enabled, every player that spawn in one of the world listed in \"ForceSpawnLocOnJoin.worlds\"",
+        "will be teleported to the spawnpoint after successful authentication.",
         "The quit location of the player will be overwritten.",
         "This is different from \"teleportUnAuthedToSpawn\" that teleport player",
-        "back to his quit location after the authentication."})
+        "to the spawnpoint on join."})
     public static final Property<Boolean> FORCE_SPAWN_LOCATION_AFTER_LOGIN =
         newProperty("settings.restrictions.ForceSpawnLocOnJoin.enabled", false);
 

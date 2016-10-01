@@ -4,7 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.cache.auth.PlayerAuth;
 import fr.xephi.authme.security.crypts.HashedPassword;
-import fr.xephi.authme.settings.NewSetting;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.DatabaseSettings;
 import fr.xephi.authme.util.StringUtils;
 
@@ -16,6 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +38,7 @@ public class SQLite implements DataSource {
      * @throws ClassNotFoundException if no driver could be found for the datasource
      * @throws SQLException           when initialization of a SQL datasource failed
      */
-    public SQLite(NewSetting settings) throws ClassNotFoundException, SQLException {
+    public SQLite(Settings settings) throws ClassNotFoundException, SQLException {
         this.database = settings.getProperty(DatabaseSettings.MYSQL_DATABASE);
         this.tableName = settings.getProperty(DatabaseSettings.MYSQL_TABLE);
         this.col = new Columns(settings);
@@ -52,7 +53,7 @@ public class SQLite implements DataSource {
     }
 
     @VisibleForTesting
-    SQLite(NewSetting settings, Connection connection) {
+    SQLite(Settings settings, Connection connection) {
         this.database = settings.getProperty(DatabaseSettings.MYSQL_DATABASE);
         this.tableName = settings.getProperty(DatabaseSettings.MYSQL_TABLE);
         this.col = new Columns(settings);
@@ -298,10 +299,13 @@ public class SQLite implements DataSource {
     }
 
     @Override
-    public Set<String> getRecordsToPurge(long until) {
+    public Set<String> getRecordsToPurge(long until, boolean includeEntriesWithLastLoginZero) {
         Set<String> list = new HashSet<>();
 
-        String select = "SELECT " + col.NAME + " FROM " + tableName + " WHERE " + col.LAST_LOGIN + "<?;";
+        String select = "SELECT " + col.NAME + " FROM " + tableName + " WHERE " + col.LAST_LOGIN + " < ?";
+        if (!includeEntriesWithLastLoginZero) {
+            select += " AND " + col.LAST_LOGIN + " <> 0";
+        }
         try (PreparedStatement selectPst = con.prepareStatement(select)) {
             selectPst.setLong(1, until);
             try (ResultSet rs = selectPst.executeQuery()) {
@@ -317,11 +321,11 @@ public class SQLite implements DataSource {
     }
 
     @Override
-    public void purgeRecords(Set<String> toPurge) {
+    public void purgeRecords(Collection<String> toPurge) {
         String delete = "DELETE FROM " + tableName + " WHERE " + col.NAME + "=?;";
         try (PreparedStatement deletePst = con.prepareStatement(delete)) {
             for (String name : toPurge) {
-                deletePst.setString(1, name);
+                deletePst.setString(1, name.toLowerCase());
                 deletePst.executeUpdate();
             }
         } catch (SQLException ex) {
@@ -334,7 +338,7 @@ public class SQLite implements DataSource {
         PreparedStatement pst = null;
         try {
             pst = con.prepareStatement("DELETE FROM " + tableName + " WHERE " + col.NAME + "=?;");
-            pst.setString(1, user);
+            pst.setString(1, user.toLowerCase());
             pst.executeUpdate();
             return true;
         } catch (SQLException ex) {

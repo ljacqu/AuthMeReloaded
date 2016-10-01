@@ -1,13 +1,13 @@
 package fr.xephi.authme.settings.properties;
 
+import com.github.authme.configme.Comment;
+import com.github.authme.configme.SettingsHolder;
+import com.github.authme.configme.properties.Property;
 import fr.xephi.authme.datasource.DataSourceType;
-import fr.xephi.authme.settings.domain.Comment;
-import fr.xephi.authme.settings.domain.Property;
-import fr.xephi.authme.settings.domain.SettingsClass;
 
-import static fr.xephi.authme.settings.domain.Property.newProperty;
+import static com.github.authme.configme.properties.PropertyInitializer.newProperty;
 
-public class DatabaseSettings implements SettingsClass {
+public class DatabaseSettings implements SettingsHolder {
 
     @Comment({"What type of database do you want to use?",
             "Valid values: sqlite, mysql"})
@@ -50,7 +50,7 @@ public class DatabaseSettings implements SettingsClass {
     public static final Property<String> MYSQL_COL_NAME =
         newProperty("DataSource.mySQLColumnName", "username");
 
-    @Comment("Column for storing or checking players RealName ")
+    @Comment("Column for storing or checking players RealName")
     public static final Property<String> MYSQL_COL_REALNAME =
         newProperty("DataSource.mySQLRealName", "realname");
 
@@ -97,10 +97,6 @@ public class DatabaseSettings implements SettingsClass {
     @Comment("Column for storing players groups")
     public static final Property<String> MYSQL_COL_GROUP =
         newProperty("ExternalBoardOptions.mySQLColumnGroup", "");
-
-    @Comment("Enable this when you allow registration through a website")
-    public static final Property<Boolean> MYSQL_WEBSITE =
-        newProperty("DataSource.mySQLWebsite", false);
 
     private DatabaseSettings() {
     }

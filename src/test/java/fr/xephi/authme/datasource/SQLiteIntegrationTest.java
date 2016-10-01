@@ -1,9 +1,9 @@
 package fr.xephi.authme.datasource;
 
+import com.github.authme.configme.properties.Property;
 import fr.xephi.authme.TestHelper;
 import fr.xephi.authme.cache.auth.PlayerAuth;
-import fr.xephi.authme.settings.NewSetting;
-import fr.xephi.authme.settings.domain.Property;
+import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.DatabaseSettings;
 import org.junit.After;
 import org.junit.Before;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 public class SQLiteIntegrationTest extends AbstractDataSourceIntegrationTest {
 
     /** Mock of a settings instance. */
-    private static NewSetting settings;
+    private static Settings settings;
     /** Collection of SQL statements to execute for initialization of a test. */
     private static String[] sqlInitialize;
     /** Connection to the SQLite test database. */
@@ -47,7 +47,7 @@ public class SQLiteIntegrationTest extends AbstractDataSourceIntegrationTest {
         // Check that we have an implementation for SQLite
         Class.forName("org.sqlite.JDBC");
 
-        settings = mock(NewSetting.class);
+        settings = mock(Settings.class);
         when(settings.getProperty(any(Property.class))).thenAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
@@ -56,7 +56,7 @@ public class SQLiteIntegrationTest extends AbstractDataSourceIntegrationTest {
         });
         set(DatabaseSettings.MYSQL_DATABASE, "sqlite-test");
         set(DatabaseSettings.MYSQL_TABLE, "authme");
-        TestHelper.setupLogger();
+        TestHelper.setRealLogger();
 
         Path sqlInitFile = TestHelper.getJarPath(TestHelper.PROJECT_ROOT + "datasource/sql-initialize.sql");
         // Note ljacqu 20160221: It appears that we can only run one statement per Statement.execute() so we split

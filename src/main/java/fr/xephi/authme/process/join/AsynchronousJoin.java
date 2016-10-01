@@ -14,11 +14,11 @@ import fr.xephi.authme.permission.AuthGroupType;
 import fr.xephi.authme.permission.PlayerStatePermission;
 import fr.xephi.authme.process.AsynchronousProcess;
 import fr.xephi.authme.process.ProcessService;
+import fr.xephi.authme.process.login.AsynchronousLogin;
 import fr.xephi.authme.settings.properties.HooksSettings;
 import fr.xephi.authme.settings.properties.PluginSettings;
 import fr.xephi.authme.settings.properties.RegistrationSettings;
 import fr.xephi.authme.settings.properties.RestrictionSettings;
-import fr.xephi.authme.settings.properties.SecuritySettings;
 import fr.xephi.authme.task.PlayerDataTaskManager;
 import fr.xephi.authme.util.BukkitService;
 import fr.xephi.authme.util.Utils;
@@ -34,7 +34,9 @@ import javax.inject.Inject;
 import static fr.xephi.authme.settings.properties.RestrictionSettings.PROTECT_INVENTORY_BEFORE_LOGIN;
 import static fr.xephi.authme.util.BukkitService.TICKS_PER_SECOND;
 
-
+/**
+ * Asynchronous process for when a player joins.
+ */
 public class AsynchronousJoin implements AsynchronousProcess {
 
     private static final boolean DISABLE_COLLISIONS = MethodUtils
@@ -67,6 +69,9 @@ public class AsynchronousJoin implements AsynchronousProcess {
     @Inject
     private PlayerDataTaskManager playerDataTaskManager;
 
+    @Inject
+    private AsynchronousLogin asynchronousLogin;
+
     AsynchronousJoin() {
     }
 
@@ -86,12 +91,7 @@ public class AsynchronousJoin implements AsynchronousProcess {
 
         if (service.getProperty(RestrictionSettings.FORCE_SURVIVAL_MODE)
             && !service.hasPermission(player, PlayerStatePermission.BYPASS_FORCE_SURVIVAL)) {
-            bukkitService.runTask(new Runnable() {
-                @Override
-                public void run() {
-                    player.setGameMode(GameMode.SURVIVAL);
-                }
-            });
+            bukkitService.runTask(() -> player.setGameMode(GameMode.SURVIVAL));
         }
 
         if (service.getProperty(HooksSettings.DISABLE_SOCIAL_SPY)) {
@@ -99,7 +99,7 @@ public class AsynchronousJoin implements AsynchronousProcess {
         }
 
         if (isNameRestricted(name, ip, player.getAddress().getHostName())) {
-            bukkitService.scheduleSyncDelayedTask(new Runnable() {
+            bukkitService.scheduleSyncTaskFromOptionallyAsyncTask(new Runnable() {
                 @Override
                 public void run() {
                     player.kickPlayer(service.retrieveSingleMessage(MessageKey.NOT_OWNER_ERROR));
@@ -124,26 +124,23 @@ public class AsynchronousJoin implements AsynchronousProcess {
 
             // Protect inventory
             if (service.getProperty(PROTECT_INVENTORY_BEFORE_LOGIN)) {
-                ProtectInventoryEvent ev = new ProtectInventoryEvent(player);
+                final boolean isAsync = service.getProperty(PluginSettings.USE_ASYNC_TASKS);
+                ProtectInventoryEvent ev = new ProtectInventoryEvent(player, isAsync);
                 bukkitService.callEvent(ev);
                 if (ev.isCancelled()) {
                     player.updateInventory();
-                    if (!service.getProperty(SecuritySettings.REMOVE_SPAM_FROM_CONSOLE)) {
-                        ConsoleLogger.info("ProtectInventoryEvent has been cancelled for " + player.getName() + "...");
-                    }
+                    ConsoleLogger.fine("ProtectInventoryEvent has been cancelled for " + player.getName() + "...");
                 }
             }
 
             // Session logic
-            if (service.getProperty(PluginSettings.SESSIONS_ENABLED) && (sessionManager.hasSession(name) || database.isLogged(name))) {
-                sessionManager.cancelSession(name);
-
+            if (sessionManager.hasSession(name) || database.isLogged(name)) {
                 PlayerAuth auth = database.getAuth(name);
                 database.setUnlogged(name);
                 playerCache.removePlayer(name);
                 if (auth != null && auth.getIp().equals(ip)) {
                     service.send(player, MessageKey.SESSION_RECONNECTION);
-                    plugin.getManagement().performLogin(player, "dontneed", true);
+                    bukkitService.runTaskOptionallyAsync(() -> asynchronousLogin.forceLogin(player));
                     return;
                 } else if (service.getProperty(PluginSettings.SESSIONS_EXPIRE_ON_IP_CHANGE)) {
                     service.send(player, MessageKey.SESSION_EXPIRED);
@@ -165,7 +162,7 @@ public class AsynchronousJoin implements AsynchronousProcess {
 
         final int registrationTimeout = service.getProperty(RestrictionSettings.TIMEOUT) * TICKS_PER_SECOND;
 
-        bukkitService.scheduleSyncDelayedTask(new Runnable() {
+        bukkitService.scheduleSyncTaskFromOptionallyAsyncTask(new Runnable() {
             @Override
             public void run() {
                 player.setOp(false);
@@ -242,12 +239,8 @@ public class AsynchronousJoin implements AsynchronousProcess {
             && !"localhost".equalsIgnoreCase(ip)
             && countOnlinePlayersByIp(ip) > service.getProperty(RestrictionSettings.MAX_JOIN_PER_IP)) {
 
-            bukkitService.scheduleSyncDelayedTask(new Runnable() {
-                @Override
-                public void run() {
-                    player.kickPlayer(service.retrieveSingleMessage(MessageKey.SAME_IP_ONLINE));
-                }
-            });
+            bukkitService.scheduleSyncTaskFromOptionallyAsyncTask(
+                () -> player.kickPlayer(service.retrieveSingleMessage(MessageKey.SAME_IP_ONLINE)));
             return false;
         }
         return true;

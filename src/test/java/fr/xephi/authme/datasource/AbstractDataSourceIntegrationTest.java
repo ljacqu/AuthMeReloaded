@@ -195,7 +195,7 @@ public abstract class AbstractDataSourceIntegrationTest {
         DataSource dataSource = getDataSource();
 
         // when
-        boolean response1 = dataSource.removeAuth("bobby");
+        boolean response1 = dataSource.removeAuth("Bobby");
         boolean response2 = dataSource.removeAuth("does-not-exist");
 
         // then
@@ -328,14 +328,16 @@ public abstract class AbstractDataSourceIntegrationTest {
     public void shouldGetRecordsToPurge() {
         // given
         DataSource dataSource = getDataSource();
-        // 1453242857 -> user, 1449136800 -> bobby
+        PlayerAuth auth = PlayerAuth.builder().name("potato").lastLogin(0).build();
+        dataSource.saveAuth(auth);
+        // 1453242857 -> user, 1449136800 -> bobby, 0 -> potato
 
         // when
-        Set<String> records1 = dataSource.getRecordsToPurge(1450000000);
-        Set<String> records2 = dataSource.getRecordsToPurge(1460000000);
+        Set<String> records1 = dataSource.getRecordsToPurge(1450000000, true);
+        Set<String> records2 = dataSource.getRecordsToPurge(1460000000, false);
 
         // then
-        assertThat(records1, contains("bobby"));
+        assertThat(records1, containsInAnyOrder("bobby", "potato"));
         assertThat(records2, containsInAnyOrder("bobby", "user"));
         // check that the entry was not deleted because of running this command
         assertThat(dataSource.isAuthAvailable("bobby"), equalTo(true));
@@ -369,4 +371,16 @@ public abstract class AbstractDataSourceIntegrationTest {
         assertThat(dataSource.getLoggedPlayers(), empty());
     }
 
+    @Test
+    public void shouldPerformPurgeOperation() {
+        // given
+        List<String> names = Arrays.asList("Bobby", "USER", "DoesnotExist");
+        DataSource dataSource = getDataSource();
+
+        // when
+        dataSource.purgeRecords(names);
+
+        // then
+        assertThat(dataSource.getAllAuths(), empty());
+    }
 }
