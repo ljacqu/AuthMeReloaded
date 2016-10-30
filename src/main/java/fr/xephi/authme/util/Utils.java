@@ -1,9 +1,6 @@
 package fr.xephi.authme.util;
 
 import fr.xephi.authme.ConsoleLogger;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-
 import java.util.regex.Pattern;
 
 /**
@@ -16,24 +13,8 @@ public final class Utils {
     /** Number of milliseconds in an hour. */
     public static final long MILLIS_PER_HOUR = 60 * MILLIS_PER_MINUTE;
 
+    // Utility class
     private Utils() {
-    }
-
-    /**
-     * Get player's UUID if can, name otherwise.
-     *
-     * @param player Player to retrieve
-     *
-     * @return player's UUID or Name in String.
-     */
-    public static String getUUIDorName(OfflinePlayer player) {
-        // We may made this configurable in future
-        // so we can have uuid support.
-        try {
-            return player.getUniqueId().toString();
-        } catch (NoSuchMethodError ignore) {
-            return player.getName();
-        }
     }
 
     /**
@@ -53,17 +34,6 @@ public final class Utils {
     }
 
     /**
-     * Returns the IP of the given player.
-     *
-     * @param p The player to return the IP address for
-     *
-     * @return The player's IP address
-     */
-    public static String getPlayerIp(Player p) {
-        return p.getAddress().getAddress().getHostAddress();
-    }
-
-    /**
      * Returns whether the class exists in the current class loader.
      *
      * @param className the class name to check
@@ -78,4 +48,13 @@ public final class Utils {
             return false;
         }
     }
+
+    /**
+     * Return the available core count of the JVM.
+     *
+     * @return the core count
+     */
+	public static int getCoreCount() {
+		return Runtime.getRuntime().availableProcessors();
+	}
 }

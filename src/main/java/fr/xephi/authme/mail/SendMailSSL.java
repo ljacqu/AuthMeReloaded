@@ -5,7 +5,7 @@ import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.EmailSettings;
 import fr.xephi.authme.settings.properties.SecuritySettings;
-import fr.xephi.authme.util.BukkitService;
+import fr.xephi.authme.service.BukkitService;
 import fr.xephi.authme.util.FileUtils;
 import fr.xephi.authme.util.StringUtils;
 import org.apache.commons.mail.EmailConstants;
@@ -69,7 +69,6 @@ public class SendMailSSL {
 
             @Override
             public void run() {
-                Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
                 HtmlEmail email;
                 try {
                     email = initializeMail(mailAddress);
@@ -147,6 +146,7 @@ public class SendMailSSL {
     }
 
     private static boolean sendEmail(String content, HtmlEmail email) {
+        Thread.currentThread().setContextClassLoader(SendMailSSL.class.getClassLoader());
         try {
             email.setHtmlMsg(content);
             email.setTextMsg(content);

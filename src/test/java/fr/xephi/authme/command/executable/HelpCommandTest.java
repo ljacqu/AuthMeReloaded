@@ -20,17 +20,21 @@ import static fr.xephi.authme.command.FoundResultStatus.INCORRECT_ARGUMENTS;
 import static fr.xephi.authme.command.FoundResultStatus.MISSING_BASE_COMMAND;
 import static fr.xephi.authme.command.FoundResultStatus.SUCCESS;
 import static fr.xephi.authme.command.FoundResultStatus.UNKNOWN_LABEL;
+import static fr.xephi.authme.command.help.HelpProvider.SHOW_ALTERNATIVES;
+import static fr.xephi.authme.command.help.HelpProvider.SHOW_CHILDREN;
+import static fr.xephi.authme.command.help.HelpProvider.SHOW_COMMAND;
+import static fr.xephi.authme.command.help.HelpProvider.SHOW_DESCRIPTION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 /**
  * Test for {@link HelpCommand}.
@@ -108,7 +112,7 @@ public class HelpCommandTest {
         CommandDescription commandDescription = mock(CommandDescription.class);
         given(commandDescription.getLabelCount()).willReturn(1);
         FoundCommandResult foundCommandResult = new FoundCommandResult(commandDescription, singletonList("authme"),
-            Collections.<String>emptyList(), 0.0, SUCCESS);
+            Collections.emptyList(), 0.0, SUCCESS);
         given(commandMapper.mapPartsToCommand(sender, arguments)).willReturn(foundCommandResult);
 
         // when
@@ -116,7 +120,8 @@ public class HelpCommandTest {
 
         // then
         verify(sender, never()).sendMessage(anyString());
-        verify(helpProvider).outputHelp(sender, foundCommandResult, HelpProvider.SHOW_CHILDREN);
+        verify(helpProvider).outputHelp(sender, foundCommandResult,
+            SHOW_DESCRIPTION | SHOW_COMMAND | SHOW_CHILDREN | SHOW_ALTERNATIVES);
     }
 
     @Test
@@ -126,7 +131,7 @@ public class HelpCommandTest {
         CommandDescription commandDescription = mock(CommandDescription.class);
         given(commandDescription.getLabelCount()).willReturn(2);
         FoundCommandResult foundCommandResult = new FoundCommandResult(commandDescription, asList("authme", "getpos"),
-            Collections.<String>emptyList(), 0.0, INCORRECT_ARGUMENTS);
+            Collections.emptyList(), 0.0, INCORRECT_ARGUMENTS);
         given(commandMapper.mapPartsToCommand(sender, arguments)).willReturn(foundCommandResult);
 
         // when

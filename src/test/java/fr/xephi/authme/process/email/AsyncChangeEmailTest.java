@@ -1,9 +1,9 @@
 package fr.xephi.authme.process.email;
 
-import fr.xephi.authme.cache.auth.PlayerAuth;
-import fr.xephi.authme.cache.auth.PlayerCache;
+import fr.xephi.authme.data.auth.PlayerAuth;
+import fr.xephi.authme.data.auth.PlayerCache;
 import fr.xephi.authme.datasource.DataSource;
-import fr.xephi.authme.output.MessageKey;
+import fr.xephi.authme.message.MessageKey;
 import fr.xephi.authme.process.ProcessService;
 import fr.xephi.authme.settings.properties.RegistrationSettings;
 import org.bukkit.entity.Player;
@@ -13,8 +13,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -128,8 +128,6 @@ public class AsyncChangeEmailTest {
         PlayerAuth auth = authWithMail("other@address.email");
         given(playerCache.getAuth("bobby")).willReturn(auth);
         given(service.validateEmail(newEmail)).willReturn(true);
-        given(service.isEmailFreeForRegistration(newEmail, player)).willReturn(true);
-
 
         // when
         process.changeEmail(player, "old@mail.tld", newEmail);

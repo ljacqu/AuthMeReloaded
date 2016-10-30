@@ -1,10 +1,8 @@
 package tools.checktestmocks;
 
-import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
 import fr.xephi.authme.ClassCollector;
 import fr.xephi.authme.TestHelper;
-import fr.xephi.authme.util.StringUtils;
 import org.mockito.Mock;
 import tools.utils.AutoToolTask;
 import tools.utils.InjectorUtils;
@@ -14,8 +12,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Task checking if all tests' {@code @Mock} fields have a corresponding
@@ -31,17 +29,12 @@ public class CheckTestMocks implements AutoToolTask {
     }
 
     @Override
-    public void execute(Scanner scanner) {
-        executeDefault();
-    }
-
-    @Override
     public void executeDefault() {
-        ClassCollector collector = new ClassCollector(TestHelper.SOURCES_FOLDER, TestHelper.PROJECT_ROOT);
+        ClassCollector collector = new ClassCollector(TestHelper.TEST_SOURCES_FOLDER, TestHelper.PROJECT_ROOT);
         for (Class<?> clazz : collector.collectClasses(c -> isTestClassWithMocks(c))) {
             checkClass(clazz);
         }
-        System.out.println(StringUtils.join("\n", errors));
+        System.out.println(String.join("\n", errors));
     }
 
     /**
@@ -112,8 +105,9 @@ public class CheckTestMocks implements AutoToolTask {
     }
 
     private static String formatClassList(Collection<Class<?>> coll) {
-        Collection<String> classNames = Collections2.transform(coll, Class::getSimpleName);
-        return StringUtils.join(", ", classNames);
+        return coll.stream()
+            .map(Class::getSimpleName)
+            .collect(Collectors.joining(", "));
     }
 
 }

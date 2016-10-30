@@ -3,7 +3,7 @@ package fr.xephi.authme.command.executable.authme;
 import fr.xephi.authme.permission.PermissionsManager;
 import fr.xephi.authme.permission.PlayerPermission;
 import fr.xephi.authme.process.Management;
-import fr.xephi.authme.util.BukkitService;
+import fr.xephi.authme.service.BukkitService;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.junit.Test;
@@ -17,12 +17,10 @@ import java.util.Collections;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 /**
  * Test for {@link ForceLoginCommand}.
@@ -46,7 +44,7 @@ public class ForceLoginCommandTest {
     public void shouldRejectOfflinePlayer() {
         // given
         String playerName = "Bobby";
-        Player player = mockPlayer(false, playerName);
+        Player player = mockPlayer(false);
         given(bukkitService.getPlayerExact(playerName)).willReturn(player);
         CommandSender sender = mock(CommandSender.class);
 
@@ -79,7 +77,7 @@ public class ForceLoginCommandTest {
     public void shouldRejectPlayerWithMissingPermission() {
         // given
         String playerName = "testTest";
-        Player player = mockPlayer(true, playerName);
+        Player player = mockPlayer(true);
         given(bukkitService.getPlayerExact(playerName)).willReturn(player);
         given(permissionsManager.hasPermission(player, PlayerPermission.CAN_LOGIN_BE_FORCED)).willReturn(false);
         CommandSender sender = mock(CommandSender.class);
@@ -97,7 +95,7 @@ public class ForceLoginCommandTest {
     public void shouldForceLoginPlayer() {
         // given
         String playerName = "tester23";
-        Player player = mockPlayer(true, playerName);
+        Player player = mockPlayer(true);
         given(bukkitService.getPlayerExact(playerName)).willReturn(player);
         given(permissionsManager.hasPermission(player, PlayerPermission.CAN_LOGIN_BE_FORCED)).willReturn(true);
         CommandSender sender = mock(CommandSender.class);
@@ -107,31 +105,30 @@ public class ForceLoginCommandTest {
 
         // then
         verify(bukkitService).getPlayerExact(playerName);
-        verify(management).performLogin(eq(player), anyString(), eq(true));
+        verify(management).forceLogin(player);
     }
 
     @Test
     public void shouldForceLoginSenderSelf() {
         // given
         String senderName = "tester23";
-        Player player = mockPlayer(true, senderName);
+        Player player = mockPlayer(true);
         given(bukkitService.getPlayerExact(senderName)).willReturn(player);
         given(permissionsManager.hasPermission(player, PlayerPermission.CAN_LOGIN_BE_FORCED)).willReturn(true);
         CommandSender sender = mock(CommandSender.class);
         given(sender.getName()).willReturn(senderName);
 
         // when
-        command.executeCommand(sender, Collections.<String>emptyList());
+        command.executeCommand(sender, Collections.emptyList());
 
         // then
         verify(bukkitService).getPlayerExact(senderName);
-        verify(management).performLogin(eq(player), anyString(), eq(true));
+        verify(management).forceLogin(player);
     }
 
-    private static Player mockPlayer(boolean isOnline, String name) {
+    private static Player mockPlayer(boolean isOnline) {
         Player player = mock(Player.class);
         given(player.isOnline()).willReturn(isOnline);
-        given(player.getName()).willReturn(name);
         return player;
     }
 }

@@ -4,7 +4,6 @@ import fr.xephi.authme.output.LogLevel;
 import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.PluginSettings;
 import fr.xephi.authme.settings.properties.SecuritySettings;
-import fr.xephi.authme.util.StringUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -27,8 +26,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -135,7 +134,7 @@ public class ConsoleLoggerTest {
         assertThat(loggedLines.get(1),
             containsString("[WARN] Exception occurred: [IllegalStateException]: Test exception message"));
         // Check that we have this class' full name somewhere in the file -> stacktrace of Exception e
-        assertThat(StringUtils.join("", loggedLines), containsString(getClass().getCanonicalName()));
+        assertThat(String.join("", loggedLines), containsString(getClass().getCanonicalName()));
     }
 
     @Test

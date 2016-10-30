@@ -1,21 +1,21 @@
 package fr.xephi.authme.process.unregister;
 
 import fr.xephi.authme.TestHelper;
-import fr.xephi.authme.cache.auth.PlayerAuth;
-import fr.xephi.authme.cache.auth.PlayerCache;
-import fr.xephi.authme.cache.limbo.LimboCache;
+import fr.xephi.authme.data.auth.PlayerAuth;
+import fr.xephi.authme.data.auth.PlayerCache;
+import fr.xephi.authme.data.limbo.LimboCache;
 import fr.xephi.authme.datasource.DataSource;
-import fr.xephi.authme.output.MessageKey;
+import fr.xephi.authme.message.MessageKey;
 import fr.xephi.authme.permission.AuthGroupHandler;
 import fr.xephi.authme.permission.AuthGroupType;
 import fr.xephi.authme.process.ProcessService;
 import fr.xephi.authme.security.PasswordSecurity;
 import fr.xephi.authme.security.crypts.HashedPassword;
+import fr.xephi.authme.service.BukkitService;
+import fr.xephi.authme.service.TeleportationService;
 import fr.xephi.authme.settings.properties.RegistrationSettings;
 import fr.xephi.authme.settings.properties.RestrictionSettings;
-import fr.xephi.authme.task.PlayerDataTaskManager;
-import fr.xephi.authme.util.BukkitService;
-import fr.xephi.authme.util.TeleportationService;
+import fr.xephi.authme.task.LimboPlayerTaskManager;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.junit.BeforeClass;
@@ -25,8 +25,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
@@ -55,7 +55,7 @@ public class AsynchronousUnregisterTest {
     @Mock
     private LimboCache limboCache;
     @Mock
-    private PlayerDataTaskManager playerDataTaskManager;
+    private LimboPlayerTaskManager limboPlayerTaskManager;
     @Mock
     private TeleportationService teleportationService;
     @Mock
@@ -85,7 +85,7 @@ public class AsynchronousUnregisterTest {
         // then
         verify(service).send(player, MessageKey.WRONG_PASSWORD);
         verify(passwordSecurity).comparePassword(userPassword, password, name);
-        verifyZeroInteractions(dataSource, playerDataTaskManager, limboCache, authGroupHandler, teleportationService);
+        verifyZeroInteractions(dataSource, limboPlayerTaskManager, limboCache, authGroupHandler, teleportationService);
         verify(player, only()).getName();
     }
 
@@ -175,7 +175,7 @@ public class AsynchronousUnregisterTest {
         verify(dataSource).removeAuth(name);
         verify(playerCache).removePlayer(name);
         verify(authGroupHandler).setGroup(player, AuthGroupType.UNREGISTERED);
-        verifyZeroInteractions(teleportationService, playerDataTaskManager);
+        verifyZeroInteractions(teleportationService, limboPlayerTaskManager);
         verify(bukkitService, never()).runTask(any(Runnable.class));
     }
 
@@ -185,7 +185,6 @@ public class AsynchronousUnregisterTest {
         Player player = mock(Player.class);
         String name = "Frank21";
         given(player.getName()).willReturn(name);
-        given(player.isOnline()).willReturn(true);
         PlayerAuth auth = mock(PlayerAuth.class);
         given(playerCache.getAuth(name)).willReturn(auth);
         HashedPassword password = new HashedPassword("password", "in_auth_obj");
@@ -218,9 +217,6 @@ public class AsynchronousUnregisterTest {
         String userPassword = "pass";
         given(passwordSecurity.comparePassword(userPassword, password, name)).willReturn(true);
         given(dataSource.removeAuth(name)).willReturn(true);
-        given(service.getProperty(RegistrationSettings.FORCE)).willReturn(true);
-        given(service.getProperty(RegistrationSettings.APPLY_BLIND_EFFECT)).willReturn(true);
-        given(service.getProperty(RestrictionSettings.TIMEOUT)).willReturn(12);
 
         // when
         asynchronousUnregister.unregister(player, userPassword);
@@ -238,7 +234,6 @@ public class AsynchronousUnregisterTest {
         // given
         Player player = mock(Player.class);
         String name = "Frank21";
-        given(player.getName()).willReturn(name);
         given(player.isOnline()).willReturn(true);
         given(dataSource.removeAuth(name)).willReturn(true);
         given(service.getProperty(RegistrationSettings.FORCE)).willReturn(true);

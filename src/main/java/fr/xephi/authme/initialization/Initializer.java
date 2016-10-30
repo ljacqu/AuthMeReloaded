@@ -1,22 +1,24 @@
 package fr.xephi.authme.initialization;
 
-import com.github.authme.configme.knownproperties.PropertyEntry;
+import com.github.authme.configme.knownproperties.ConfigurationData;
 import com.github.authme.configme.resource.PropertyResource;
 import com.github.authme.configme.resource.YamlFileResource;
 import fr.xephi.authme.AuthMe;
 import fr.xephi.authme.ConsoleLogger;
-import fr.xephi.authme.cache.auth.PlayerAuth;
+import fr.xephi.authme.data.auth.PlayerAuth;
 import fr.xephi.authme.datasource.CacheDataSource;
 import fr.xephi.authme.datasource.DataSource;
 import fr.xephi.authme.datasource.DataSourceType;
 import fr.xephi.authme.datasource.FlatFile;
 import fr.xephi.authme.datasource.MySQL;
 import fr.xephi.authme.datasource.SQLite;
+import fr.xephi.authme.message.MessageKey;
+import fr.xephi.authme.message.Messages;
 import fr.xephi.authme.output.ConsoleFilter;
 import fr.xephi.authme.output.Log4JFilter;
 import fr.xephi.authme.output.LogLevel;
-import fr.xephi.authme.output.MessageKey;
-import fr.xephi.authme.output.Messages;
+import fr.xephi.authme.service.BukkitService;
+import fr.xephi.authme.service.MigrationService;
 import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.SettingsMigrationService;
 import fr.xephi.authme.settings.properties.AuthMeSettingsRetriever;
@@ -24,9 +26,6 @@ import fr.xephi.authme.settings.properties.DatabaseSettings;
 import fr.xephi.authme.settings.properties.EmailSettings;
 import fr.xephi.authme.settings.properties.PluginSettings;
 import fr.xephi.authme.settings.properties.SecuritySettings;
-import fr.xephi.authme.util.BukkitService;
-import fr.xephi.authme.util.FileUtils;
-import fr.xephi.authme.util.MigrationService;
 import fr.xephi.authme.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.bukkit.Bukkit;
@@ -42,8 +41,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
+import static fr.xephi.authme.service.BukkitService.TICKS_PER_MINUTE;
 import static fr.xephi.authme.settings.properties.EmailSettings.RECALL_PLAYERS;
-import static fr.xephi.authme.util.BukkitService.TICKS_PER_MINUTE;
 
 /**
  * Initializes various services.
@@ -68,15 +67,14 @@ public class Initializer {
      * @return the settings instance, or null if it could not be constructed
      */
     public static Settings createSettings(AuthMe authMe) throws Exception {
-        SettingsMigrationService migrationService = new SettingsMigrationService(authMe.getDataFolder());
-        List<PropertyEntry> knownProperties = AuthMeSettingsRetriever.getAllPropertyFields();
-
         File configFile = new File(authMe.getDataFolder(), "config.yml");
-        if (FileUtils.copyFileFromResource(configFile, "config.yml")) {
-            PropertyResource resource = new YamlFileResource(configFile);
-            return new Settings(authMe.getDataFolder(), resource, migrationService, knownProperties);
+        if(!configFile.exists()) {
+            configFile.createNewFile();
         }
-        throw new Exception("Could not copy config.yml from JAR to plugin folder");
+        PropertyResource resource = new YamlFileResource(configFile);
+        SettingsMigrationService migrationService = new SettingsMigrationService(authMe.getDataFolder());
+        ConfigurationData configurationData = AuthMeSettingsRetriever.buildConfigurationData();
+        return new Settings(authMe.getDataFolder(), resource, migrationService, configurationData);
     }
 
     /**

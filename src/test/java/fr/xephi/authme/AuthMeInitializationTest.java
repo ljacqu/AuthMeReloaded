@@ -13,15 +13,14 @@ import fr.xephi.authme.permission.PermissionsManager;
 import fr.xephi.authme.process.Management;
 import fr.xephi.authme.process.login.ProcessSyncPlayerLogin;
 import fr.xephi.authme.security.PasswordSecurity;
+import fr.xephi.authme.service.BukkitService;
 import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.task.purge.PurgeService;
-import fr.xephi.authme.util.BukkitService;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -36,7 +35,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import static fr.xephi.authme.settings.TestSettingsMigrationServices.alwaysFulfilled;
-import static fr.xephi.authme.settings.properties.AuthMeSettingsRetriever.getAllPropertyFields;
+import static fr.xephi.authme.settings.properties.AuthMeSettingsRetriever.buildConfigurationData;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -80,7 +79,6 @@ public class AuthMeInitializationTest {
         // Mock / wire various Bukkit components
         given(server.getLogger()).willReturn(mock(Logger.class));
         ReflectionTestUtils.setField(Bukkit.class, null, "server", server);
-        given(server.getScheduler()).willReturn(mock(BukkitScheduler.class));
         given(server.getPluginManager()).willReturn(pluginManager);
 
         // PluginDescriptionFile is final: need to create a sample one
@@ -95,7 +93,7 @@ public class AuthMeInitializationTest {
     public void shouldInitializeAllServices() {
         // given
         Settings settings =
-            new Settings(dataFolder, mock(PropertyResource.class), alwaysFulfilled(), getAllPropertyFields());
+            new Settings(dataFolder, mock(PropertyResource.class), alwaysFulfilled(), buildConfigurationData());
 
         Injector injector = new InjectorBuilder().addDefaultHandlers("fr.xephi.authme").create();
         injector.provide(DataFolder.class, dataFolder);

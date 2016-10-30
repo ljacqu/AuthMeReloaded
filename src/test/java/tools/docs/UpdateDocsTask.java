@@ -1,22 +1,19 @@
 package tools.docs;
 
-import com.google.common.collect.ImmutableSet;
-import tools.commands.CommandPageCreater;
-import tools.hashmethods.HashAlgorithmsDescriptionTask;
-import tools.permissions.PermissionsListWriter;
+import fr.xephi.authme.ClassCollector;
+import fr.xephi.authme.TestHelper;
 import tools.utils.AutoToolTask;
 import tools.utils.ToolTask;
 
+import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Task that runs all tasks which update files in the docs folder.
  */
 public class UpdateDocsTask implements AutoToolTask {
-
-    private static final Set<Class<? extends ToolTask>> TASKS = ImmutableSet.<Class<? extends ToolTask>>of(
-        CommandPageCreater.class, HashAlgorithmsDescriptionTask.class, PermissionsListWriter.class);
 
     @Override
     public String getTaskName() {
@@ -25,48 +22,30 @@ public class UpdateDocsTask implements AutoToolTask {
 
     @Override
     public void execute(final Scanner scanner) {
-        executeTasks(new TaskRunner() {
-            @Override
-            public void execute(ToolTask task) {
-                task.execute(scanner);
-            }
-        });
+        executeTasks(task -> task.execute(scanner));
     }
 
     @Override
     public void executeDefault() {
-        executeTasks(new TaskRunner() {
-            @Override
-            public void execute(ToolTask task) {
-                if (task instanceof AutoToolTask) {
-                    ((AutoToolTask) task).executeDefault();
-                }
+        executeTasks(task -> {
+            if (task instanceof AutoToolTask) {
+                ((AutoToolTask) task).executeDefault();
             }
         });
     }
 
-    private static ToolTask instantiateTask(Class<? extends ToolTask> clazz) {
-        try {
-            return clazz.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new UnsupportedOperationException(e);
+    private void executeTasks(Consumer<ToolTask> taskRunner) {
+        for (ToolTask task : getDocTasks()) {
+            System.out.println("\nRunning " + task.getTaskName() + "\n-------------------");
+            taskRunner.accept(task);
         }
     }
 
-    private static void executeTasks(TaskRunner runner) {
-        for (Class<? extends ToolTask> taskClass : TASKS) {
-            try {
-                ToolTask task = instantiateTask(taskClass);
-                System.out.println("\nRunning " + task.getTaskName() + "\n-------------------");
-                runner.execute(task);
-            } catch (UnsupportedOperationException e) {
-                System.err.println("Error running task of class '" + taskClass + "'");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private interface TaskRunner {
-        void execute(ToolTask task);
+    private List<ToolTask> getDocTasks() {
+        ClassCollector classCollector =
+            new ClassCollector(TestHelper.TEST_SOURCES_FOLDER, "tools/docs");
+        return classCollector.getInstancesOfType(ToolTask.class).stream()
+            .filter(task -> task.getClass() != getClass())
+            .collect(Collectors.toList());
     }
 }

@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.lang.String.format;
+import static tools.utils.FileIoUtils.listFilesOrThrow;
 
 /**
  * Task to verify the keys in the messages files.
@@ -28,8 +28,6 @@ public final class VerifyMessagesTask implements ToolTask {
     private static final String MESSAGES_FOLDER = ToolsConstants.MAIN_RESOURCES_ROOT + "messages/";
     /** Pattern of the message file names. */
     private static final Pattern MESSAGE_FILE_PATTERN = Pattern.compile("messages_[a-z]{2,7}\\.yml");
-    /** Tag that is replaced to the messages folder in user input. */
-    private static final String SOURCES_TAG = "{msgdir}";
     /** File to get default messages from (assumes that it is complete). */
     private static final String DEFAULT_MESSAGES_FILE = MESSAGES_FOLDER + "messages_en.yml";
 
@@ -41,8 +39,8 @@ public final class VerifyMessagesTask implements ToolTask {
     @Override
     public void execute(Scanner scanner) {
         System.out.println("Check a specific file only?");
+        System.out.println("Enter the language code for a specific file (e.g. 'es' for messages_es.yml)");
         System.out.println("- Empty line will check all files in the resources messages folder (default)");
-        System.out.println(format("- %s will be replaced to the messages folder %s", SOURCES_TAG, MESSAGES_FOLDER));
         String inputFile = scanner.nextLine();
 
         System.out.println("Add any missing keys to files? ['y' = yes]");
@@ -52,7 +50,7 @@ public final class VerifyMessagesTask implements ToolTask {
         if (StringUtils.isEmpty(inputFile)) {
             messageFiles = getMessagesFiles();
         } else {
-            File customFile = new File(inputFile.replace(SOURCES_TAG, MESSAGES_FOLDER));
+            File customFile = new File(MESSAGES_FOLDER, "messages_" + inputFile + ".yml");
             messageFiles = Collections.singletonList(customFile);
         }
 
@@ -64,7 +62,7 @@ public final class VerifyMessagesTask implements ToolTask {
         // Verify the given files
         for (File file : messageFiles) {
             System.out.println("Verifying '" + file.getName() + "'");
-            MessageFileVerifier verifier = new MessageFileVerifier(file.getAbsolutePath());
+            MessageFileVerifier verifier = new MessageFileVerifier(file);
             if (addMissingKeys) {
                 verifyFileAndAddKeys(verifier, defaultMessages);
             } else {
@@ -128,12 +126,7 @@ public final class VerifyMessagesTask implements ToolTask {
     }
 
     private static List<File> getMessagesFiles() {
-        File folder = new File(MESSAGES_FOLDER);
-        File[] files = folder.listFiles();
-        if (files == null) {
-            throw new IllegalStateException("Could not read files from folder '" + folder.getName() + "'");
-        }
-
+        File[] files = listFilesOrThrow(new File(MESSAGES_FOLDER));
         List<File> messageFiles = new ArrayList<>();
         for (File file : files) {
             if (MESSAGE_FILE_PATTERN.matcher(file.getName()).matches()) {

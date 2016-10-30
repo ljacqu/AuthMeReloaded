@@ -3,7 +3,7 @@ package fr.xephi.authme.command.executable.register;
 import fr.xephi.authme.TestHelper;
 import fr.xephi.authme.command.CommandService;
 import fr.xephi.authme.mail.SendMailSSL;
-import fr.xephi.authme.output.MessageKey;
+import fr.xephi.authme.message.MessageKey;
 import fr.xephi.authme.process.Management;
 import fr.xephi.authme.security.HashAlgorithm;
 import fr.xephi.authme.settings.properties.EmailSettings;
@@ -27,12 +27,12 @@ import java.util.Collections;
 
 import static fr.xephi.authme.AuthMeMatchers.stringWithLength;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 /**
  * Test for {@link RegisterCommand}.
@@ -158,7 +158,6 @@ public class RegisterCommandTest {
 
         given(commandService.getProperty(RegistrationSettings.USE_EMAIL_REGISTRATION)).willReturn(true);
         given(commandService.getProperty(RegistrationSettings.ENABLE_CONFIRM_EMAIL)).willReturn(true);
-        given(commandService.getProperty(EmailSettings.MAIL_ACCOUNT)).willReturn("server@example.com");
         given(sendMailSsl.hasAllInformation()).willReturn(true);
         Player player = mock(Player.class);
 
@@ -179,7 +178,6 @@ public class RegisterCommandTest {
 
         given(commandService.getProperty(RegistrationSettings.USE_EMAIL_REGISTRATION)).willReturn(true);
         given(commandService.getProperty(RegistrationSettings.ENABLE_CONFIRM_EMAIL)).willReturn(true);
-        given(commandService.getProperty(EmailSettings.MAIL_ACCOUNT)).willReturn("server@example.com");
         given(sendMailSsl.hasAllInformation()).willReturn(true);
         Player player = mock(Player.class);
 
@@ -202,7 +200,6 @@ public class RegisterCommandTest {
 
         given(commandService.getProperty(RegistrationSettings.USE_EMAIL_REGISTRATION)).willReturn(true);
         given(commandService.getProperty(RegistrationSettings.ENABLE_CONFIRM_EMAIL)).willReturn(true);
-        given(commandService.getProperty(EmailSettings.MAIL_ACCOUNT)).willReturn("server@example.com");
         given(sendMailSsl.hasAllInformation()).willReturn(true);
         Player player = mock(Player.class);
 

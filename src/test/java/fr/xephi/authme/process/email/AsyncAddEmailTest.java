@@ -1,10 +1,10 @@
 package fr.xephi.authme.process.email;
 
 import fr.xephi.authme.TestHelper;
-import fr.xephi.authme.cache.auth.PlayerAuth;
-import fr.xephi.authme.cache.auth.PlayerCache;
+import fr.xephi.authme.data.auth.PlayerAuth;
+import fr.xephi.authme.data.auth.PlayerCache;
 import fr.xephi.authme.datasource.DataSource;
-import fr.xephi.authme.output.MessageKey;
+import fr.xephi.authme.message.MessageKey;
 import fr.xephi.authme.process.ProcessService;
 import fr.xephi.authme.settings.properties.RegistrationSettings;
 import org.bukkit.entity.Player;
@@ -15,8 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -79,7 +79,6 @@ public class AsyncAddEmailTest {
         PlayerAuth auth = mock(PlayerAuth.class);
         given(auth.getEmail()).willReturn(null);
         given(playerCache.getAuth("tester")).willReturn(auth);
-        given(dataSource.countAuthsByEmail(email)).willReturn(0);
         given(dataSource.updateEmail(any(PlayerAuth.class))).willReturn(false);
         given(service.validateEmail(email)).willReturn(true);
         given(service.isEmailFreeForRegistration(email, player)).willReturn(true);

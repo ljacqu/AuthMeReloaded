@@ -2,12 +2,12 @@ package tools.messages.translation;
 
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
-import fr.xephi.authme.output.MessageKey;
+import fr.xephi.authme.message.MessageKey;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import tools.messages.MessageFileVerifier;
 import tools.messages.VerifyMessagesTask;
-import tools.utils.FileUtils;
+import tools.utils.FileIoUtils;
 import tools.utils.ToolTask;
 import tools.utils.ToolsConstants;
 
@@ -89,7 +89,7 @@ public class ImportMessagesTask implements ToolTask {
             throw new IllegalStateException(e);
         }
 
-        MessageFileVerifier verifier = new MessageFileVerifier(fileName);
+        MessageFileVerifier verifier = new MessageFileVerifier(file);
         VerifyMessagesTask.verifyFileAndAddKeys(verifier, YamlConfiguration.loadConfiguration(
             new File(MESSAGES_FOLDER + "messages_en.yml")));
     }
@@ -108,9 +108,9 @@ public class ImportMessagesTask implements ToolTask {
      * @param file The file whose to-do comments should be removed
      */
     private static void removeAllTodoComments(String file) {
-        String contents = FileUtils.readFromFile(file);
+        String contents = FileIoUtils.readFromFile(file);
         String regex = "^# TODO .*$";
         contents = Pattern.compile(regex, Pattern.MULTILINE).matcher(contents).replaceAll("");
-        FileUtils.writeToFile(file, contents);
+        FileIoUtils.writeToFile(file, contents);
     }
 }
