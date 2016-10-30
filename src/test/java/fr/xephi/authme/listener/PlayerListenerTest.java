@@ -1,18 +1,18 @@
 package fr.xephi.authme.listener;
 
-import fr.xephi.authme.service.AntiBotService;
 import fr.xephi.authme.data.auth.PlayerAuth;
 import fr.xephi.authme.datasource.DataSource;
 import fr.xephi.authme.message.MessageKey;
 import fr.xephi.authme.message.Messages;
 import fr.xephi.authme.process.Management;
+import fr.xephi.authme.service.AntiBotService;
+import fr.xephi.authme.service.BukkitService;
+import fr.xephi.authme.service.TeleportationService;
+import fr.xephi.authme.service.ValidationService;
 import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.SpawnLoader;
 import fr.xephi.authme.settings.properties.HooksSettings;
 import fr.xephi.authme.settings.properties.RestrictionSettings;
-import fr.xephi.authme.service.BukkitService;
-import fr.xephi.authme.service.TeleportationService;
-import fr.xephi.authme.service.ValidationService;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -45,14 +45,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import static fr.xephi.authme.listener.ListenerTestUtils.checkEventIsCanceledForUnauthed;
+import static fr.xephi.authme.listener.EventCancelVerifier.withServiceMock;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -153,15 +153,16 @@ public class PlayerListenerTest {
 
     @Test
     public void shouldHandleSimpleCancelableEvents() {
-        checkEventIsCanceledForUnauthed(listener, listenerService, PlayerShearEntityEvent.class);
-        checkEventIsCanceledForUnauthed(listener, listenerService, PlayerFishEvent.class);
-        checkEventIsCanceledForUnauthed(listener, listenerService, PlayerBedEnterEvent.class);
-        checkEventIsCanceledForUnauthed(listener, listenerService, PlayerDropItemEvent.class);
-        checkEventIsCanceledForUnauthed(listener, listenerService, EntityDamageByEntityEvent.class);
-        checkEventIsCanceledForUnauthed(listener, listenerService, PlayerItemConsumeEvent.class);
-        checkEventIsCanceledForUnauthed(listener, listenerService, PlayerInteractEvent.class);
-        checkEventIsCanceledForUnauthed(listener, listenerService, PlayerPickupItemEvent.class);
-        checkEventIsCanceledForUnauthed(listener, listenerService, PlayerInteractEntityEvent.class);
+        withServiceMock(listenerService)
+            .check(listener::onPlayerShear, PlayerShearEntityEvent.class)
+            .check(listener::onPlayerFish, PlayerFishEvent.class)
+            .check(listener::onPlayerBedEnter, PlayerBedEnterEvent.class)
+            .check(listener::onPlayerDropItem, PlayerDropItemEvent.class)
+            .check(listener::onPlayerHitPlayerEvent, EntityDamageByEntityEvent.class)
+            .check(listener::onPlayerConsumeItem, PlayerItemConsumeEvent.class)
+            .check(listener::onPlayerInteract, PlayerInteractEvent.class)
+            .check(listener::onPlayerPickupItem, PlayerPickupItemEvent.class)
+            .check(listener::onPlayerInteractEntity, PlayerInteractEntityEvent.class);
     }
 
     @Test
@@ -378,7 +379,6 @@ public class PlayerListenerTest {
         Location to = new Location(world, 199, 70, 199);
         PlayerMoveEvent event = spy(new PlayerMoveEvent(player, from, to));
         given(listenerService.shouldCancelEvent(player)).willReturn(true);
-        given(settings.getProperty(RestrictionSettings.REMOVE_SPEED)).willReturn(false);
 
         // when
         listener.onPlayerMove(event);
@@ -564,7 +564,6 @@ public class PlayerListenerTest {
         verify(onJoinVerifier).checkKickNonRegistered(true);
         verify(onJoinVerifier).checkNameCasing(player, auth);
         verify(onJoinVerifier).checkPlayerCountry(true, ip);
-        verify(antiBotService).handlePlayerJoin();
         verify(teleportationService).teleportOnJoin(player);
         verifyNoModifyingCalls(event);
     }

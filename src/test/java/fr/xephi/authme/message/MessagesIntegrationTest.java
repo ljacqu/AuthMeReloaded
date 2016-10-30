@@ -2,7 +2,6 @@ package fr.xephi.authme.message;
 
 import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.TestHelper;
-import fr.xephi.authme.settings.Settings;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.junit.Before;
@@ -12,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.io.File;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 import static org.hamcrest.Matchers.arrayWithSize;
@@ -19,14 +19,14 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 /**
  * Test for {@link Messages}.
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 public class MessagesIntegrationTest {
 
     private static final String YML_TEST_FILE = TestHelper.PROJECT_ROOT + "message/messages_test.yml";
-    private static final String YML_DEFAULT_TEST_FILE = TestHelper.PROJECT_ROOT + "message/messages_default.yml";
+    private static final String YML_DEFAULT_TEST_FILE = "messages/messages_en.yml";
     private Messages messages;
 
     @BeforeClass
@@ -53,10 +53,8 @@ public class MessagesIntegrationTest {
     @Before
     public void setUpMessages() {
         File testFile = TestHelper.getJarFile(YML_TEST_FILE);
-        Settings settings = mock(Settings.class);
-        given(settings.getMessagesFile()).willReturn(testFile);
-        given(settings.getDefaultMessagesFile()).willReturn(YML_DEFAULT_TEST_FILE);
-        messages = new Messages(settings);
+        MessageFileHandlerProvider provider = providerReturning(testFile, YML_DEFAULT_TEST_FILE);
+        messages = new Messages(provider);
     }
 
     @Test
@@ -203,7 +201,8 @@ public class MessagesIntegrationTest {
         String message = messages.retrieveSingle(key);
 
         // then
-        assertThat(message, equalTo("Message from default file"));
+        assertThat(message,
+            equalTo("§4Only registered users can join the server! Please visit http://example.com to register yourself!"));
     }
 
     @Test
@@ -220,55 +219,6 @@ public class MessagesIntegrationTest {
     }
 
     @Test
-    public void shouldReturnErrorForMissingMessage() {
-        // given
-        // Key is not present in test file or default file
-        MessageKey key = MessageKey.TWO_FACTOR_CREATE;
-
-        // when
-        String message = messages.retrieveSingle(key);
-
-        // then
-        assertThat(message, containsString("Error retrieving message"));
-    }
-
-    @Test
-    public void shouldAllowNullAsDefaultFile() {
-        // given
-        Settings settings = mock(Settings.class);
-        given(settings.getMessagesFile()).willReturn(TestHelper.getJarFile(YML_TEST_FILE));
-        Messages testMessages = new Messages(settings);
-        // Key not present in test file
-        MessageKey key = MessageKey.TWO_FACTOR_CREATE;
-
-        // when
-        String message = testMessages.retrieveSingle(key);
-
-        // then
-        assertThat(message, containsString("Error retrieving message"));
-    }
-
-    @Test
-    public void shouldLoadOtherFile() {
-        // given
-        MessageKey key = MessageKey.WRONG_PASSWORD;
-        // assumption: message comes back as defined in messages_test.yml
-        assumeThat(messages.retrieveSingle(key), equalTo("§cWrong password!"));
-        Settings settings = mock(Settings.class);
-        given(settings.getMessagesFile()).willReturn(TestHelper.getJarFile(
-            TestHelper.PROJECT_ROOT + "message/messages_test2.yml"));
-
-        // when
-        messages.reload(settings);
-
-        // then
-        assertThat(messages.retrieveSingle(key), equalTo("test2 - wrong password"));
-        // check that default message handling still works
-        assertThat(messages.retrieveSingle(MessageKey.MUST_REGISTER_MESSAGE),
-            equalTo("Message from default file"));
-    }
-
-    @Test
     public void shouldRetrieveMessageWithReplacements() {
         // given
         MessageKey key = MessageKey.CAPTCHA_WRONG_ERROR;
@@ -278,5 +228,13 @@ public class MessagesIntegrationTest {
 
         // then
         assertThat(result, equalTo("Use /captcha 24680 to solve the captcha"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static MessageFileHandlerProvider providerReturning(File file, String defaultFile) {
+        MessageFileHandlerProvider handler = mock(MessageFileHandlerProvider.class);
+        given(handler.initializeHandler(any(Function.class)))
+            .willReturn(new MessageFileHandler(file, defaultFile));
+        return handler;
     }
 }

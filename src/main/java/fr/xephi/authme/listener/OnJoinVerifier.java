@@ -9,14 +9,14 @@ import fr.xephi.authme.message.Messages;
 import fr.xephi.authme.permission.PermissionsManager;
 import fr.xephi.authme.permission.PlayerStatePermission;
 import fr.xephi.authme.service.AntiBotService;
+import fr.xephi.authme.service.BukkitService;
+import fr.xephi.authme.service.ValidationService;
 import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.ProtectionSettings;
 import fr.xephi.authme.settings.properties.RegistrationSettings;
 import fr.xephi.authme.settings.properties.RestrictionSettings;
-import fr.xephi.authme.service.BukkitService;
 import fr.xephi.authme.util.StringUtils;
 import fr.xephi.authme.util.Utils;
-import fr.xephi.authme.service.ValidationService;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerLoginEvent;
@@ -68,10 +68,10 @@ class OnJoinVerifier implements Reloadable {
      * @param isAuthAvailable whether or not the player is registered
      */
     public void checkAntibot(Player player, boolean isAuthAvailable) throws FailedVerificationException {
-        if (permissionsManager.hasPermission(player, PlayerStatePermission.BYPASS_ANTIBOT)) {
+        if (isAuthAvailable || permissionsManager.hasPermission(player, PlayerStatePermission.BYPASS_ANTIBOT)) {
             return;
         }
-        if (antiBotService.shouldKick(isAuthAvailable)) {
+        if (antiBotService.shouldKick()) {
             antiBotService.addPlayerKick(player.getName());
             throw new FailedVerificationException(MessageKey.KICK_ANTIBOT);
         }

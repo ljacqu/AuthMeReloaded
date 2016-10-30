@@ -4,6 +4,7 @@ import com.github.authme.configme.Comment;
 import com.github.authme.configme.SettingsHolder;
 import com.github.authme.configme.properties.Property;
 
+import javax.inject.Inject;
 import java.util.List;
 
 import static com.github.authme.configme.properties.PropertyInitializer.newListProperty;
@@ -36,7 +37,7 @@ public class RestrictionSettings implements SettingsHolder {
 
     @Comment("Minimum allowed username length")
     public static final Property<Integer> MIN_NICKNAME_LENGTH =
-        newProperty("settings.restrictions.minNicknameLength", 4);
+        newProperty("settings.restrictions.minNicknameLength", 3);
 
     @Comment("Maximum allowed username length")
     public static final Property<Integer> MAX_NICKNAME_LENGTH =
@@ -50,9 +51,9 @@ public class RestrictionSettings implements SettingsHolder {
         newProperty("settings.restrictions.ForceSingleSession", true);
 
     @Comment({
-        "If enabled, every player that spawn in one of the world listed in \"ForceSpawnLocOnJoin.worlds\"",
-        "will be teleported to the spawnpoint after successful authentication.",
-        "The quit location of the player will be overwritten.",
+        "If enabled, every player that spawn in one of the world listed in",
+        "\"ForceSpawnLocOnJoin.worlds\" will be teleported to the spawnpoint after successful",
+        "authentication. The quit location of the player will be overwritten.",
         "This is different from \"teleportUnAuthedToSpawn\" that teleport player",
         "to the spawnpoint on join."})
     public static final Property<Boolean> FORCE_SPAWN_LOCATION_AFTER_LOGIN =
@@ -187,6 +188,14 @@ public class RestrictionSettings implements SettingsHolder {
     public static final Property<List<String>> UNRESTRICTED_NAMES =
         newLowercaseListProperty("settings.unrestrictions.UnrestrictedName");
 
+    @Comment("Threshold of the other accounts command, a value less than 1 means disabled.")
+    public static final Property<Integer> OTHER_ACCOUNTS_CMD_THRESHOLD =
+        newProperty("settings.restrictions.otherAccountsCmdThreshold", 0);
+
+    @Comment("The other accounts command, available variables: %playername%, %playerip%")
+    public static final Property<String> OTHER_ACCOUNTS_CMD =
+        newProperty("settings.restrictions.otherAccountsCmd",
+            "say The player %playername% with ip %playerip% has multiple accounts!");
 
     private RestrictionSettings() {
     }

@@ -1,6 +1,5 @@
 package fr.xephi.authme.settings;
 
-import com.github.authme.configme.knownproperties.PropertyEntry;
 import com.github.authme.configme.migration.PlainMigrationService;
 import com.github.authme.configme.properties.Property;
 import com.github.authme.configme.resource.PropertyResource;
@@ -35,7 +34,7 @@ public class SettingsMigrationService extends PlainMigrationService {
     }
 
     @Override
-    protected boolean performMigrations(PropertyResource resource, List<PropertyEntry> knownProperties) {
+    protected boolean performMigrations(PropertyResource resource, List<Property<?>> properties) {
         boolean changes = false;
         if ("[a-zA-Z0-9_?]*".equals(resource.getString(ALLOWED_NICKNAME_CHARACTERS.getPath()))) {
             resource.setValue(ALLOWED_NICKNAME_CHARACTERS.getPath(), "[a-zA-Z0-9_]*");
@@ -49,6 +48,7 @@ public class SettingsMigrationService extends PlainMigrationService {
             | migrateJoinLeaveMessages(resource)
             | migrateForceSpawnSettings(resource)
             | changeBooleanSettingToLogLevelProperty(resource)
+            | hasOldHelpHeaderProperty(resource)
             || hasDeprecatedProperties(resource);
     }
 
@@ -149,6 +149,15 @@ public class SettingsMigrationService extends PlainMigrationService {
             boolean oldValue = Objects.firstNonNull(resource.getBoolean(oldPath), false);
             LogLevel level = oldValue ? LogLevel.INFO : LogLevel.FINE;
             resource.setValue(newProperty.getPath(), level.name());
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean hasOldHelpHeaderProperty(PropertyResource resource) {
+        if (resource.contains("settings.helpHeader")) {
+            ConsoleLogger.warning("Help header setting is now in messages/help_xx.yml, "
+                + "please check the file to set it again");
             return true;
         }
         return false;

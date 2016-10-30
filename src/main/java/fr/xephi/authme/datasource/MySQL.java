@@ -5,9 +5,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.pool.HikariPool.PoolInitializationException;
 import fr.xephi.authme.ConsoleLogger;
 import fr.xephi.authme.data.auth.PlayerAuth;
-import fr.xephi.authme.datasource.Columns;
-import fr.xephi.authme.datasource.DataSource;
-import fr.xephi.authme.datasource.DataSourceType;
 import fr.xephi.authme.security.HashAlgorithm;
 import fr.xephi.authme.security.crypts.HashedPassword;
 import fr.xephi.authme.security.crypts.XFBCRYPT;
@@ -15,8 +12,8 @@ import fr.xephi.authme.settings.Settings;
 import fr.xephi.authme.settings.properties.DatabaseSettings;
 import fr.xephi.authme.settings.properties.HooksSettings;
 import fr.xephi.authme.settings.properties.SecuritySettings;
-import fr.xephi.authme.util.RuntimeUtils;
 import fr.xephi.authme.util.StringUtils;
+import fr.xephi.authme.util.Utils;
 
 import java.sql.Blob;
 import java.sql.Connection;
@@ -40,6 +37,7 @@ public class MySQL implements DataSource {
     private String password;
     private String database;
     private String tableName;
+    private int poolSize;
     private List<String> columnOthers;
     private Columns col;
     private HashAlgorithm hashAlgorithm;
@@ -98,6 +96,10 @@ public class MySQL implements DataSource {
         this.phpBbPrefix = settings.getProperty(HooksSettings.PHPBB_TABLE_PREFIX);
         this.phpBbGroup = settings.getProperty(HooksSettings.PHPBB_ACTIVATED_GROUP_ID);
         this.wordpressPrefix = settings.getProperty(HooksSettings.WORDPRESS_TABLE_PREFIX);
+        this.poolSize = settings.getProperty(DatabaseSettings.MYSQL_POOL_SIZE);
+        if (poolSize == -1) {
+            poolSize = Utils.getCoreCount();
+        }
     }
 
     private void setConnectionArguments() throws RuntimeException {
@@ -105,7 +107,7 @@ public class MySQL implements DataSource {
         ds.setPoolName("AuthMeMYSQLPool");
 
         // Pool size
-    	ds.setMaximumPoolSize(RuntimeUtils.getCoreCount());
+    	ds.setMaximumPoolSize(poolSize);
 
         // Database URL
         ds.setJdbcUrl("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database);

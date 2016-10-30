@@ -1,40 +1,30 @@
 package fr.xephi.authme.message;
 
 import fr.xephi.authme.ConsoleLogger;
-import fr.xephi.authme.initialization.SettingsDependent;
-import fr.xephi.authme.settings.Settings;
+import fr.xephi.authme.initialization.Reloadable;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 
 import javax.inject.Inject;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 
 /**
  * Class for retrieving and sending translatable messages to players.
  */
-public class Messages implements SettingsDependent {
+public class Messages implements Reloadable {
 
     // Custom Authme tag replaced to new line
     private static final String NEWLINE_TAG = "%nl%";
 
-    private FileConfiguration configuration;
-    private String fileName;
-    private final String defaultFile;
-    private FileConfiguration defaultConfiguration;
+    private final MessageFileHandlerProvider messageFileHandlerProvider;
+    private MessageFileHandler messageFileHandler;
 
-    /**
+    /*
      * Constructor.
-     *
-     * @param settings The settings
      */
     @Inject
-    Messages(Settings settings) {
-        reload(settings);
-        this.defaultFile = settings.getDefaultMessagesFile();
+    Messages(MessageFileHandlerProvider messageFileHandlerProvider) {
+        this.messageFileHandlerProvider = messageFileHandlerProvider;
+        reload();
     }
 
     /**
@@ -88,15 +78,8 @@ public class Messages implements SettingsDependent {
      * @return The message from the file
      */
     private String retrieveMessage(MessageKey key) {
-        final String code = key.getKey();
-        String message = configuration.getString(code);
-
-        if (message == null) {
-            ConsoleLogger.warning("Error getting message with key '" + code + "'. "
-                + "Please verify your config file at '" + fileName + "'");
-            return formatMessage(getDefault(code));
-        }
-        return formatMessage(message);
+        return formatMessage(
+            messageFileHandler.getMessage(key.getKey()));
     }
 
     /**
@@ -122,27 +105,9 @@ public class Messages implements SettingsDependent {
     }
 
     @Override
-    public void reload(Settings settings) {
-        File messageFile = settings.getMessagesFile();
-        this.configuration = YamlConfiguration.loadConfiguration(messageFile);
-        this.fileName = messageFile.getName();
-    }
-
-    private String getDefault(String code) {
-        if (defaultFile == null) {
-            return getDefaultErrorMessage(code);
-        }
-
-        if (defaultConfiguration == null) {
-            InputStream stream = Messages.class.getResourceAsStream(defaultFile);
-            defaultConfiguration = YamlConfiguration.loadConfiguration(new InputStreamReader(stream));
-        }
-        String message = defaultConfiguration.getString(code);
-        return message == null ? getDefaultErrorMessage(code) : message;
-    }
-
-    private static String getDefaultErrorMessage(String code) {
-        return "Error retrieving message '" + code + "'";
+    public void reload() {
+        this.messageFileHandler = messageFileHandlerProvider
+            .initializeHandler(lang -> "messages/messages_" + lang + ".yml");
     }
 
     private static String formatMessage(String message) {

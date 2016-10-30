@@ -1,9 +1,6 @@
 package fr.xephi.authme.util;
 
 import fr.xephi.authme.ConsoleLogger;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-
 import java.util.regex.Pattern;
 
 /**
@@ -51,4 +48,13 @@ public final class Utils {
             return false;
         }
     }
+
+    /**
+     * Return the available core count of the JVM.
+     *
+     * @return the core count
+     */
+	public static int getCoreCount() {
+		return Runtime.getRuntime().availableProcessors();
+	}
 }
